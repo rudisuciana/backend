@@ -75,6 +75,7 @@ test/
 - `POST /api/auth/verify-otp`
 - `POST /api/auth/login`
 - `POST /api/auth/refresh-token`
+- `POST /api/auth/logout`
 - `POST /api/auth/forgot-password`
 - `POST /api/auth/reset-password`
 - `POST /api/auth/google/register`

@@ -166,7 +166,7 @@ paths:
                   success:
                     type: boolean
                   data:
-                    $ref: '#/components/schemas/AccessTokenPayload'
+                    $ref: '#/components/schemas/AuthTokens'
         '401':
           description: Invalid credentials
   /api/auth/refresh-token:
@@ -184,7 +184,16 @@ paths:
                   success:
                     type: boolean
                   data:
-                    $ref: '#/components/schemas/AuthTokens'
+                    $ref: '#/components/schemas/AccessTokenPayload'
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout user by invalidating stored refresh session
+      responses:
+        '200':
+          description: Logout successful
+        '401':
+          description: Invalid refresh token
   /api/auth/forgot-password:
     post:
       tags: [Auth]

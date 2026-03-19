@@ -29,6 +29,7 @@ authRouter.post('/register', authController.registerManual);
 authRouter.post('/verify-otp', authController.verifyOtp);
 authRouter.post('/login', authController.login);
 authRouter.post('/refresh-token', authController.refreshToken);
+authRouter.post('/logout', authController.logout);
 authRouter.post('/forgot-password', authController.forgotPassword);
 authRouter.post('/reset-password', authController.resetPassword);
 authRouter.post('/google/register', authController.registerGoogle);

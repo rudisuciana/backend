@@ -65,6 +65,15 @@ describe('Auth API validation', () => {
     expect(response.body.success).toBe(false);
   });
 
+  it('should validate logout payload', async () => {
+    const response = await request(app).post('/api/auth/logout').send({
+      refreshToken: 'short'
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+  });
+
   it('should validate google login payload', async () => {
     const response = await request(app).post('/api/auth/google/login').send({
       idToken: 'short'

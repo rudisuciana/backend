@@ -194,4 +194,40 @@ describe('AuthService Gmail restriction', () => {
 
     await expect(authService.refreshToken(refreshToken)).rejects.toThrow('INVALID_REFRESH_TOKEN');
   });
+
+  it('should clear refresh session on logout when refresh token is valid', async () => {
+    const userId = 14;
+    const refreshToken = jwt.sign({}, env.auth.refreshTokenSecret, {
+      subject: String(userId),
+      expiresIn: env.auth.refreshTokenExpiresIn as jwt.SignOptions['expiresIn']
+    });
+    const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+
+    const authRepository = {
+      getUserById: vi.fn().mockResolvedValue({
+        id: userId,
+        username: 'logout-user',
+        name: 'Logout User',
+        email: 'logout@gmail.com',
+        phone: '0812300000',
+        apikey: 'apikey',
+        passwordHash: 'hash',
+        googleId: null,
+        emailVerifiedAt: new Date().toISOString(),
+        refreshTokenHash,
+        refreshTokenExpired: new Date(Date.now() + 60_000).toISOString(),
+        status: 'active'
+      }),
+      setRefreshTokenHash: vi.fn()
+    };
+    const redisClient = {
+      set: vi.fn()
+    };
+    const authService = new AuthService(authRepository as never, redisClient as never);
+
+    await authService.logout(refreshToken);
+
+    expect(authRepository.setRefreshTokenHash).toHaveBeenCalledOnce();
+    expect(authRepository.setRefreshTokenHash).toHaveBeenCalledWith(userId, null, null);
+  });
 });

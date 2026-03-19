@@ -148,6 +148,22 @@ export class AuthController {
     }
   };
 
+  logout = async (req: Request, res: Response): Promise<void> => {
+    const parsed = refreshSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ success: false, message: 'Invalid logout payload' });
+      return;
+    }
+
+    try {
+      await this.authService.logout(parsed.data.refreshToken);
+      res.json({ success: true, message: 'Logout successful' });
+    } catch (error) {
+      const mapped = mapAuthError(error);
+      res.status(mapped.status).json({ success: false, message: mapped.message });
+    }
+  };
+
   forgotPassword = async (req: Request, res: Response): Promise<void> => {
     const parsed = forgotPasswordSchema.safeParse(req.body);
     if (!parsed.success) {

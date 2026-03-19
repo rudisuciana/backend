@@ -8,9 +8,10 @@ Channel ini dipakai untuk registrasi, login, verifikasi OTP, refresh token, dan 
 
 ## Catatan Autentikasi
 - Endpoint di channel auth **tidak memakai** `x-api-key`.
-- Hasil login/refresh mengembalikan:
+- Hasil login mengembalikan:
   - `accessToken` (JWT, disimpan sementara di Redis sesuai TTL)
   - `refreshToken` (JWT, dipakai untuk minta access token baru)
+- Hasil refresh hanya mengembalikan `accessToken` baru (tanpa refresh token baru).
 - Untuk akses endpoint produk website gunakan:
   - `Authorization: Bearer <accessToken>`
 
@@ -102,7 +103,26 @@ Membuat access token baru menggunakan refresh token tanpa menerbitkan refresh to
 }
 ```
 
-### 5) POST `/api/auth/forgot-password`
+
+### 5) POST `/api/auth/logout`
+Logout user dengan menghapus sesi refresh token di server (refresh hash + refresh expiry di database akan dikosongkan).
+
+**Body Request**
+```json
+{
+  "refreshToken": "<REFRESH_TOKEN>"
+}
+```
+
+**Response 200**
+```json
+{
+  "success": true,
+  "message": "Logout successful"
+}
+```
+
+### 6) POST `/api/auth/forgot-password`
 Kirim OTP reset password ke email user (jika email terdaftar).
 
 **Body Request**
@@ -120,7 +140,7 @@ Kirim OTP reset password ke email user (jika email terdaftar).
 }
 ```
 
-### 6) POST `/api/auth/reset-password`
+### 7) POST `/api/auth/reset-password`
 Reset password menggunakan OTP email.
 
 **Body Request**
@@ -140,7 +160,7 @@ Reset password menggunakan OTP email.
 }
 ```
 
-### 7) POST `/api/auth/google/register`
+### 8) POST `/api/auth/google/register`
 Registrasi menggunakan Google ID token (akun Gmail).
 
 **Body Request**
@@ -162,7 +182,7 @@ Registrasi menggunakan Google ID token (akun Gmail).
 }
 ```
 
-### 8) POST `/api/auth/google/login`
+### 9) POST `/api/auth/google/login`
 Login menggunakan Google ID token.
 
 **Body Request**
@@ -225,3 +245,17 @@ atau
   "message": "Email already used"
 }
 ```
+
+
+## Panduan Frontend (refresh token di-hash backend)
+
+Tidak masalah refresh token di-hash di backend, karena frontend **tetap menyimpan token asli** dari response login. Hash hanya disimpan server untuk verifikasi.
+
+Alur yang disarankan:
+1. Saat login sukses, simpan `accessToken` (memory) dan `refreshToken` (HttpOnly cookie lebih aman, atau storage sesuai kebijakan aplikasi).
+2. Jika request API gagal 401 karena access token expired, panggil `POST /api/auth/refresh-token` dengan refresh token asli.
+3. Jika refresh sukses, update access token dan ulangi request sebelumnya.
+4. Jika refresh gagal (401 Invalid refresh token), paksa logout user (hapus token lokal, arahkan ke halaman login).
+5. Saat user klik logout, panggil `POST /api/auth/logout` agar sesi refresh di server diinvalidasi.
+
+Catatan: Karena endpoint refresh tidak merotasi refresh token, frontend tetap menggunakan refresh token yang sama sampai masa berlakunya habis atau sampai logout.

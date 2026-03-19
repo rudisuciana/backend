@@ -177,6 +177,32 @@ export class AuthService {
     return { accessToken: await this.issueAndStoreAccessToken(user) };
   }
 
+  async logout(refreshToken: string): Promise<void> {
+    let payload: jwt.JwtPayload;
+    try {
+      payload = jwt.verify(refreshToken, env.auth.refreshTokenSecret) as jwt.JwtPayload;
+    } catch {
+      throw new Error('INVALID_REFRESH_TOKEN');
+    }
+
+    const userId = Number(payload.sub);
+    if (!userId) {
+      throw new Error('INVALID_REFRESH_TOKEN');
+    }
+
+    const user = await this.authRepository.getUserById(userId);
+    if (!user || !user.refreshTokenHash) {
+      throw new Error('INVALID_REFRESH_TOKEN');
+    }
+
+    const isTokenMatch = await bcrypt.compare(refreshToken, user.refreshTokenHash);
+    if (!isTokenMatch) {
+      throw new Error('INVALID_REFRESH_TOKEN');
+    }
+
+    await this.authRepository.setRefreshTokenHash(user.id, null, null);
+  }
+
   async forgotPassword(input: ForgotPasswordInput): Promise<void> {
     const user = await this.authRepository.getUserByEmail(input.email);
     if (!user) {
