@@ -83,7 +83,7 @@ Login menggunakan `email` atau `username` + `password`.
 ```
 
 ### 4) POST `/api/auth/refresh-token`
-Membuat access token baru menggunakan refresh token.
+Membuat access token baru menggunakan refresh token tanpa menerbitkan refresh token baru. Jika refresh token sudah expired, user harus login ulang.
 
 **Body Request**
 ```json
@@ -97,8 +97,7 @@ Membuat access token baru menggunakan refresh token.
 {
   "success": true,
   "data": {
-    "accessToken": "<NEW_ACCESS_TOKEN>",
-    "refreshToken": "<NEW_REFRESH_TOKEN>"
+    "accessToken": "<NEW_ACCESS_TOKEN>"
   }
 }
 ```

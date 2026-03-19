@@ -6,7 +6,7 @@ import { google } from 'googleapis';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
 import { AuthRepository } from './auth.repository';
-import type { AuthTokens, AuthUser } from './auth.types';
+import type { AccessTokenPayload, AuthTokens, AuthUser } from './auth.types';
 
 interface RegisterInput {
   username: string;
@@ -144,7 +144,7 @@ export class AuthService {
     return this.issueAndStoreTokens(user);
   }
 
-  async refreshToken(refreshToken: string): Promise<AuthTokens> {
+  async refreshToken(refreshToken: string): Promise<AccessTokenPayload> {
     let payload: jwt.JwtPayload;
     try {
       payload = jwt.verify(refreshToken, env.auth.refreshTokenSecret) as jwt.JwtPayload;
@@ -162,12 +162,19 @@ export class AuthService {
       throw new Error('INVALID_REFRESH_TOKEN');
     }
 
+    const refreshTokenExpiredAt = user.refreshTokenExpired
+      ? new Date(user.refreshTokenExpired).getTime()
+      : Number.NaN;
+    if (!Number.isFinite(refreshTokenExpiredAt) || refreshTokenExpiredAt <= Date.now()) {
+      throw new Error('INVALID_REFRESH_TOKEN');
+    }
+
     const isTokenMatch = await bcrypt.compare(refreshToken, user.refreshTokenHash);
     if (!isTokenMatch) {
       throw new Error('INVALID_REFRESH_TOKEN');
     }
 
-    return this.issueAndStoreTokens(user);
+    return { accessToken: await this.issueAndStoreAccessToken(user) };
   }
 
   async forgotPassword(input: ForgotPasswordInput): Promise<void> {
@@ -194,7 +201,7 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(input.newPassword, 10);
     await this.authRepository.updatePasswordHash(user.id, passwordHash);
-    await this.authRepository.setRefreshTokenHash(user.id, null);
+    await this.authRepository.setRefreshTokenHash(user.id, null, null);
     await this.redisClient.del(this.forgotOtpKey(input.email));
   }
 
@@ -250,6 +257,24 @@ export class AuthService {
 
   private async issueAndStoreTokens(user: AuthUser): Promise<AuthTokens> {
     const tokenId = randomUUID();
+    const accessToken = await this.issueAndStoreAccessToken(user, tokenId);
+
+    const refreshToken = jwt.sign({}, env.auth.refreshTokenSecret, {
+      subject: String(user.id),
+      expiresIn: env.auth.refreshTokenExpiresIn as jwt.SignOptions['expiresIn']
+    });
+
+    const refreshHash = await bcrypt.hash(refreshToken, 10);
+    const refreshPayload = jwt.decode(refreshToken) as jwt.JwtPayload;
+    const refreshTokenExpired = refreshPayload.exp
+      ? new Date(refreshPayload.exp * 1000).toISOString()
+      : null;
+    await this.authRepository.setRefreshTokenHash(user.id, refreshHash, refreshTokenExpired);
+
+    return { accessToken, refreshToken };
+  }
+
+  private async issueAndStoreAccessToken(user: AuthUser, tokenId: string = randomUUID()): Promise<string> {
     const accessToken = jwt.sign(
       { email: user.email, username: user.username, jti: tokenId },
       env.auth.accessTokenSecret,
@@ -259,19 +284,12 @@ export class AuthService {
       }
     );
 
-    const refreshToken = jwt.sign({}, env.auth.refreshTokenSecret, {
-      subject: String(user.id),
-      expiresIn: env.auth.refreshTokenExpiresIn as jwt.SignOptions['expiresIn']
-    });
-
-    const refreshHash = await bcrypt.hash(refreshToken, 10);
-    await this.authRepository.setRefreshTokenHash(user.id, refreshHash);
     const accessTtlSeconds = parseDurationToSeconds(env.auth.accessTokenExpiresIn);
     if (accessTtlSeconds > 0) {
       await this.redisClient.set(`auth:access:${user.id}:${tokenId}`, accessToken, 'EX', accessTtlSeconds);
     }
 
-    return { accessToken, refreshToken };
+    return accessToken;
   }
 
   private generateOtp(): string {

@@ -56,6 +56,11 @@ components:
           type: string
         refreshToken:
           type: string
+    AccessTokenPayload:
+      type: object
+      properties:
+        accessToken:
+          type: string
 paths:
   /health:
     get:
@@ -161,13 +166,13 @@ paths:
                   success:
                     type: boolean
                   data:
-                    $ref: '#/components/schemas/AuthTokens'
+                    $ref: '#/components/schemas/AccessTokenPayload'
         '401':
           description: Invalid credentials
   /api/auth/refresh-token:
     post:
       tags: [Auth]
-      summary: Refresh access token using refresh token (new access token cached in Redis)
+      summary: Refresh only access token using valid refresh token (refresh token itself is not rotated)
       responses:
         '200':
           description: Token refreshed

@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
   google_id VARCHAR(120) NULL UNIQUE,
   email_verified_at TIMESTAMP NULL DEFAULT NULL,
   refresh_token_hash VARCHAR(255) NULL,
+  refresh_token_expired TIMESTAMP NULL DEFAULT NULL,
   balance DECIMAL(18,2) NOT NULL DEFAULT 0,
   status ENUM('active', 'inactive', 'blocked') NOT NULL DEFAULT 'active',
   avatar VARCHAR(500) NULL,

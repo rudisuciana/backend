@@ -9,10 +9,15 @@ export interface AuthUser {
   googleId: string | null;
   emailVerifiedAt: string | null;
   refreshTokenHash: string | null;
+  refreshTokenExpired: string | null;
   status: string;
 }
 
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
+}
+
+export interface AccessTokenPayload {
+  accessToken: string;
 }

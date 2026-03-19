@@ -13,6 +13,7 @@ interface AuthUserRow extends RowDataPacket {
   google_id: string | null;
   email_verified_at: string | null;
   refresh_token_hash: string | null;
+  refresh_token_expired: string | null;
   status: string;
 }
 
@@ -26,7 +27,7 @@ interface CreateUserInput {
   emailVerified: boolean;
 }
 
-const authUserSelectSql = `SELECT id, username, name, email, phone, apikey, password_hash, google_id, email_verified_at, refresh_token_hash, status
+const authUserSelectSql = `SELECT id, username, name, email, phone, apikey, password_hash, google_id, email_verified_at, refresh_token_hash, refresh_token_expired, status
  FROM users`;
 
 const toAuthUser = (row: AuthUserRow): AuthUser => ({
@@ -40,6 +41,7 @@ const toAuthUser = (row: AuthUserRow): AuthUser => ({
   googleId: row.google_id,
   emailVerifiedAt: row.email_verified_at,
   refreshTokenHash: row.refresh_token_hash,
+  refreshTokenExpired: row.refresh_token_expired,
   status: row.status
 });
 
@@ -150,12 +152,16 @@ export class AuthRepository {
     );
   }
 
-  async setRefreshTokenHash(userId: number, refreshTokenHash: string | null): Promise<void> {
+  async setRefreshTokenHash(
+    userId: number,
+    refreshTokenHash: string | null,
+    refreshTokenExpired: string | null = null
+  ): Promise<void> {
     await this.mysqlPool.execute(
       `UPDATE users
-       SET refresh_token_hash = ?
+       SET refresh_token_hash = ?, refresh_token_expired = ?
        WHERE id = ?`,
-      [refreshTokenHash, userId]
+      [refreshTokenHash, refreshTokenExpired, userId]
     );
   }
 
