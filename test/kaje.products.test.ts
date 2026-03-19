@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getKajeProducts } from '../src/modules/providers/kaje/products';
+import * as mysqlInfrastructure from '../src/infrastructure/mysql';
 
 const originalEnv = { ...process.env };
 
@@ -12,6 +13,10 @@ describe('Kaje products mapper', () => {
   it('should map only requested fields and set version 2', async () => {
     process.env.KAJE_URL = 'https://example.com';
     process.env.KAJE_API = 'secret-key';
+
+    vi.spyOn(mysqlInfrastructure, 'getMySQLPool').mockReturnValue({
+      query: vi.fn().mockResolvedValue([[{ value: '1500' }], []])
+    } as never);
 
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -55,7 +60,7 @@ describe('Kaje products mapper', () => {
       {
         code: 'KDA8',
         name: 'Akrab 13-30GB',
-        price: 42000,
+        price: 43500,
         stock: 0,
         category: 'Akrab Anggota',
         description: ['line1', 'line2'],
@@ -64,9 +69,52 @@ describe('Kaje products mapper', () => {
       {
         code: 'TPENDING',
         name: 'Trial Produk Pending',
-        price: 0,
+        price: 1500,
         stock: 1,
         category: 'Uji Coba',
+        description: [],
+        version: 2
+      }
+    ]);
+  });
+
+  it('should fallback to base price when default admin fee setting is invalid', async () => {
+    process.env.KAJE_URL = 'https://example.com';
+    process.env.KAJE_API = 'secret-key';
+
+    vi.spyOn(mysqlInfrastructure, 'getMySQLPool').mockReturnValue({
+      query: vi.fn().mockResolvedValue([[{ value: 'invalid' }], []])
+    } as never);
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: {
+            products: [
+              {
+                code: 'KDA8',
+                name: 'Akrab 13-30GB',
+                category: 'Akrab Anggota',
+                stock: 0,
+                price: 42000,
+                description: []
+              }
+            ]
+          }
+        })
+      })
+    );
+
+    await expect(getKajeProducts()).resolves.toEqual([
+      {
+        code: 'KDA8',
+        name: 'Akrab 13-30GB',
+        price: 42000,
+        stock: 0,
+        category: 'Akrab Anggota',
         description: [],
         version: 2
       }
@@ -77,12 +125,20 @@ describe('Kaje products mapper', () => {
     delete process.env.KAJE_URL;
     process.env.KAJE_API = 'secret-key';
 
+    vi.spyOn(mysqlInfrastructure, 'getMySQLPool').mockReturnValue({
+      query: vi.fn().mockResolvedValue([[{ value: '1500' }], []])
+    } as never);
+
     await expect(getKajeProducts()).rejects.toThrow('KAJE_URL_IS_REQUIRED');
   });
 
   it('should return empty array when kaje request fails', async () => {
     process.env.KAJE_URL = 'https://example.com/';
     process.env.KAJE_API = 'secret-key';
+
+    vi.spyOn(mysqlInfrastructure, 'getMySQLPool').mockReturnValue({
+      query: vi.fn().mockResolvedValue([[{ value: '1500' }], []])
+    } as never);
 
     vi.stubGlobal(
       'fetch',
@@ -98,6 +154,10 @@ describe('Kaje products mapper', () => {
   it('should return empty array when kaje success is false', async () => {
     process.env.KAJE_URL = 'https://example.com/';
     process.env.KAJE_API = 'secret-key';
+
+    vi.spyOn(mysqlInfrastructure, 'getMySQLPool').mockReturnValue({
+      query: vi.fn().mockResolvedValue([[{ value: '1500' }], []])
+    } as never);
 
     vi.stubGlobal(
       'fetch',

@@ -1,3 +1,6 @@
+import type { RowDataPacket } from 'mysql2/promise';
+import { getMySQLPool } from '../../../infrastructure/mysql';
+
 interface KajeProductApiResponseItem {
   code?: unknown;
   name?: unknown;
@@ -14,6 +17,10 @@ interface KajeProductApiResponseData {
 interface KajeProductApiResponse {
   success?: unknown;
   data?: unknown;
+}
+
+interface SettingRow extends RowDataPacket {
+  value: unknown;
 }
 
 export interface KajeProduct {
@@ -75,9 +82,30 @@ const mapProduct = (item: KajeProductApiResponseItem): KajeProduct => ({
   version: 2
 });
 
+const getDefaultAdminFee = async (): Promise<number> => {
+  try {
+    const mysqlPool = getMySQLPool();
+    const [rows] = await mysqlPool.query<SettingRow[]>(
+      `SELECT value
+       FROM settings
+       WHERE \`key\` = 'default_admin_fee' AND is_active = 1
+       LIMIT 1`
+    );
+
+    if (!rows.length) {
+      return 0;
+    }
+
+    return toNumber(rows[0].value);
+  } catch {
+    return 0;
+  }
+};
+
 export const getKajeProducts = async (): Promise<KajeProduct[]> => {
   const baseUrl = getRequiredEnv('KAJE_URL').replace(/\/+$/, '');
   const apiKey = getRequiredEnv('KAJE_API');
+  const defaultAdminFee = await getDefaultAdminFee();
 
   const response = await fetch(`${baseUrl}/service/list-product`, {
     method: 'POST',
@@ -96,5 +124,11 @@ export const getKajeProducts = async (): Promise<KajeProduct[]> => {
   }
 
   const data = payload.data as KajeProductApiResponseData | undefined;
-  return normalizeProducts(data?.products).map(mapProduct);
+  return normalizeProducts(data?.products).map((item) => {
+    const product = mapProduct(item);
+    return {
+      ...product,
+      price: product.price + defaultAdminFee
+    };
+  });
 };
