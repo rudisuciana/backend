@@ -239,7 +239,7 @@ export class AuthService {
   }
 
   private generateOtp(): string {
-    return String(randomInt(100000, 1000000));
+    return String(randomInt(0, 1000000)).padStart(6, '0');
   }
 
   private registrationOtpKey(email: string): string {

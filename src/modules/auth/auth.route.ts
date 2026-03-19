@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { getMySQLPool } from '../../infrastructure/mysql';
 import { getRedisClient } from '../../infrastructure/redis';
 import { AuthController } from './auth.controller';
@@ -10,6 +11,19 @@ const authRouter = Router();
 const authRepository = new AuthRepository(getMySQLPool());
 const authService = new AuthService(authRepository, getRedisClient());
 const authController = new AuthController(authService);
+
+const authRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 20,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many auth requests, please try again later'
+  }
+});
+
+authRouter.use(authRateLimiter);
 
 authRouter.post('/register', authController.registerManual);
 authRouter.post('/verify-otp', authController.verifyOtp);
