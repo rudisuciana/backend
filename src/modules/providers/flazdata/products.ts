@@ -15,6 +15,7 @@ export interface FlazdataProduct {
   name: string;
   price: number;
   stock: number;
+  category: 'Akrab Anggota';
   description: string[];
   version: 1;
 }
@@ -63,6 +64,7 @@ const mapProduct = (item: FlazdataProductApiResponseItem): FlazdataProduct => ({
   name: typeof item.name === 'string' ? item.name : '',
   price: toNumber(item.price),
   stock: toNumber(item.stock),
+  category: 'Akrab Anggota',
   description: toDescriptionList(item.description),
   version: 1
 });

@@ -55,6 +55,7 @@ describe('Flazdata products mapper', () => {
         name: 'SUPER 🔥',
         price: 107000,
         stock: 0,
+        category: 'Akrab Anggota',
         description: ['line1', 'line2'],
         version: 1
       },
@@ -63,6 +64,7 @@ describe('Flazdata products mapper', () => {
         name: 'Demo respon pending',
         price: 0,
         stock: 1,
+        category: 'Akrab Anggota',
         description: [],
         version: 1
       }
