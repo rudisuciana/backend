@@ -56,7 +56,8 @@ test/
    ```
 
 ## Security Configuration
-- Gunakan `CORS_ORIGIN` untuk membatasi origin yang diizinkan mengakses API dari browser.
+- Akses browser dari frontend (cross-origin) hanya dibuka saat `NODE_ENV=production`.
+- Gunakan `CORS_ORIGIN` sebagai origin frontend yang diizinkan pada mode production.
 - Di environment `production`, nilai berikut wajib minimal 32 karakter:
   - `WEBSITE_API_KEY`
   - `USER_API_KEY`

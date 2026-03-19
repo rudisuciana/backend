@@ -26,7 +26,7 @@ export const createApp = () => {
   app.use(helmet());
   app.use(
     cors({
-      origin: env.cors.origin,
+      origin: env.nodeEnv === 'production' ? env.cors.origin : false,
       optionsSuccessStatus: 200
     })
   );

@@ -45,13 +45,13 @@ describe('PPOB backend blueprint', () => {
     expect(response.body.success).toBe(true);
   });
 
-  it('should not echo non-whitelisted CORS origin', async () => {
+  it('should disable CORS in non-production environment', async () => {
     const response = await request(app)
       .get('/api/v1/website/ping')
       .set('x-api-key', 'website-secret-key')
       .set('Origin', 'https://malicious.example');
 
-    expect(response.headers['access-control-allow-origin']).not.toBe('https://malicious.example');
+    expect(response.headers['access-control-allow-origin']).toBeUndefined();
   });
 
   it('should reject oversized JSON payload', async () => {
