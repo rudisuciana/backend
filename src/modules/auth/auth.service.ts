@@ -40,6 +40,8 @@ interface GoogleAuthInput {
   phone?: string;
 }
 
+const isAllowedGmail = (email: string): boolean => email.toLowerCase().endsWith('@gmail.com');
+
 export class AuthService {
   constructor(
     private readonly authRepository: AuthRepository,
@@ -47,6 +49,10 @@ export class AuthService {
   ) {}
 
   async registerManual(input: RegisterInput): Promise<{ userId: number; email: string }> {
+    if (!isAllowedGmail(input.email)) {
+      throw new Error('EMAIL_DOMAIN_NOT_ALLOWED');
+    }
+
     const existingEmail = await this.authRepository.getUserByEmail(input.email);
     if (existingEmail) {
       throw new Error('EMAIL_ALREADY_USED');
@@ -172,6 +178,9 @@ export class AuthService {
 
   async registerWithGoogle(input: GoogleAuthInput): Promise<AuthTokens> {
     const profile = await this.verifyGoogleIdToken(input.idToken);
+    if (!isAllowedGmail(profile.email)) {
+      throw new Error('EMAIL_DOMAIN_NOT_ALLOWED');
+    }
 
     const existingByEmail = await this.authRepository.getUserByEmail(profile.email);
     if (existingByEmail) {

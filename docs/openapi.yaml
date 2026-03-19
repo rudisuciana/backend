@@ -119,7 +119,7 @@ paths:
   /api/v1/auth/register:
     post:
       tags: [Auth]
-      summary: Register manual user and send OTP to email
+      summary: Register manual user with Gmail and send OTP to email
       responses:
         '201':
           description: Registration successful
@@ -185,7 +185,7 @@ paths:
   /api/v1/auth/google/register:
     post:
       tags: [Auth]
-      summary: Register using Google account
+      summary: Register using Google account (Gmail only)
       responses:
         '201':
           description: Google registration successful

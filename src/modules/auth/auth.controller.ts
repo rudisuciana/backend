@@ -4,7 +4,11 @@ import { AuthService } from './auth.service';
 
 const registerSchema = z.object({
   username: z.string().trim().min(3).max(60),
-  email: z.string().trim().email(),
+  email: z
+    .string()
+    .trim()
+    .email()
+    .refine((value) => value.toLowerCase().endsWith('@gmail.com')),
   phone: z.string().trim().min(8).max(20),
   password: z.string().min(8).max(120)
 });
@@ -66,6 +70,8 @@ const mapAuthError = (error: unknown): { status: number; message: string } => {
       return { status: 503, message: 'Google auth is not configured' };
     case 'INVALID_GOOGLE_TOKEN':
       return { status: 401, message: 'Invalid Google token' };
+    case 'EMAIL_DOMAIN_NOT_ALLOWED':
+      return { status: 400, message: 'Only Gmail addresses are allowed' };
     default:
       return { status: 500, message: 'Internal server error' };
   }

@@ -15,6 +15,18 @@ describe('Auth API validation', () => {
     expect(response.body.success).toBe(false);
   });
 
+  it('should reject register payload for non-gmail email domain', async () => {
+    const response = await request(app).post('/api/v1/auth/register').send({
+      username: 'regularuser',
+      email: 'user@yahoo.com',
+      phone: '081234567890',
+      password: 'Password123!'
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+  });
+
   it('should validate login payload', async () => {
     const response = await request(app).post('/api/v1/auth/login').send({
       identity: '',
