@@ -24,6 +24,20 @@ export const env = {
     host: process.env.REDIS_HOST ?? 'localhost',
     port: toNumber(process.env.REDIS_PORT, 6379),
     password: process.env.REDIS_PASSWORD
+  },
+  auth: {
+    accessTokenSecret: process.env.ACCESS_TOKEN_SECRET ?? 'access-secret-key',
+    refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET ?? 'refresh-secret-key',
+    accessTokenExpiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN ?? '15m',
+    refreshTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN ?? '7d',
+    otpTtlSeconds: toNumber(process.env.OTP_TTL_SECONDS, 300)
+  },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID ?? '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+    redirectUri: process.env.GOOGLE_REDIRECT_URI ?? '',
+    oauthRefreshToken: process.env.GOOGLE_OAUTH_REFRESH_TOKEN ?? '',
+    senderEmail: process.env.GOOGLE_SENDER_EMAIL ?? ''
   }
 };
 

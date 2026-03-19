@@ -1,6 +1,6 @@
 # PPOB Backend Blueprint (TypeScript + MySQL + Redis)
 
-Blueprint backend profesional untuk PPOB dengan pemisahan modul Website dan User, autentikasi `x-api-key`, logger, dokumentasi API, serta skema database MySQL.
+Blueprint backend profesional untuk PPOB dengan pemisahan modul Website, User, dan Auth, autentikasi `x-api-key` + JWT token (access/refresh), logger, dokumentasi API, serta skema database MySQL.
 
 ## Stack
 - Node.js + TypeScript
@@ -19,6 +19,7 @@ src/
   infrastructure/
   middlewares/
   modules/
+    auth/
     website/
     user/
   routes/
@@ -60,6 +61,14 @@ test/
 - `GET /api/v1/website/products`
 - `GET /api/v1/user/ping`
 - `GET /api/v1/user/profile?userId=1`
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/verify-otp`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh-token`
+- `POST /api/v1/auth/forgot-password`
+- `POST /api/v1/auth/reset-password`
+- `POST /api/v1/auth/google/register`
+- `POST /api/v1/auth/google/login`
 - `GET /docs`
 
 ## Database

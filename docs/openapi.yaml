@@ -42,6 +42,13 @@ components:
           type: number
         status:
           type: string
+    AuthTokens:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
 paths:
   /health:
     get:
@@ -119,3 +126,101 @@ paths:
           description: Invalid userId
         '404':
           description: User not found
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register manual user and send OTP to email
+      responses:
+        '201':
+          description: Registration successful
+        '400':
+          description: Invalid payload
+  /api/v1/auth/verify-otp:
+    post:
+      tags: [Auth]
+      summary: Verify OTP for manual registration
+      responses:
+        '200':
+          description: OTP verified
+        '400':
+          description: Invalid OTP or payload
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login using email or username and password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/AuthTokens'
+        '401':
+          description: Invalid credentials
+  /api/v1/auth/refresh-token:
+    post:
+      tags: [Auth]
+      summary: Refresh access token using refresh token
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/AuthTokens'
+  /api/v1/auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Send forgot-password OTP to user email
+      responses:
+        '200':
+          description: OTP process accepted
+  /api/v1/auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password using email OTP
+      responses:
+        '200':
+          description: Password reset successful
+  /api/v1/auth/google/register:
+    post:
+      tags: [Auth]
+      summary: Register using Google account
+      responses:
+        '201':
+          description: Google registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/AuthTokens'
+  /api/v1/auth/google/login:
+    post:
+      tags: [Auth]
+      summary: Login using Google account
+      responses:
+        '200':
+          description: Google login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/AuthTokens'

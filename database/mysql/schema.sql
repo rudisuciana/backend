@@ -3,9 +3,15 @@ USE ppob_blueprint;
 
 CREATE TABLE IF NOT EXISTS users (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  username VARCHAR(60) NOT NULL UNIQUE,
   name VARCHAR(120) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
+  phone VARCHAR(20) NOT NULL UNIQUE,
   apikey VARCHAR(128) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NULL,
+  google_id VARCHAR(120) NULL UNIQUE,
+  email_verified_at TIMESTAMP NULL DEFAULT NULL,
+  refresh_token_hash VARCHAR(255) NULL,
   balance DECIMAL(18,2) NOT NULL DEFAULT 0,
   status ENUM('active', 'inactive', 'blocked') NOT NULL DEFAULT 'active',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
