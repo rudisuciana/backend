@@ -77,8 +77,7 @@ test/
 - Tabel utama blueprint:
   - `users` (dengan kolom `apikey`)
   - `products`
-  - `transactions`
-  - `histories`
+  - `histories` (mencakup data transaksi + riwayat aksi)
   - `deposits`
   - `settings`
 
