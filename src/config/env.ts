@@ -11,6 +11,9 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: toNumber(process.env.PORT, 3000),
   logLevel: process.env.LOG_LEVEL ?? 'info',
+  cors: {
+    origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000'
+  },
   websiteApiKey: process.env.WEBSITE_API_KEY ?? 'website-secret-key',
   userApiKey: process.env.USER_API_KEY ?? 'user-secret-key',
   mysql: {
@@ -40,5 +43,19 @@ export const env = {
     senderEmail: process.env.GOOGLE_SENDER_EMAIL ?? ''
   }
 };
+
+if (env.nodeEnv === 'production') {
+  const hasMinimumSecretLength =
+    env.websiteApiKey.length >= 32 &&
+    env.userApiKey.length >= 32 &&
+    env.auth.accessTokenSecret.length >= 32 &&
+    env.auth.refreshTokenSecret.length >= 32;
+
+  if (!hasMinimumSecretLength) {
+    throw new Error(
+      'Production requires WEBSITE_API_KEY, USER_API_KEY, ACCESS_TOKEN_SECRET, and REFRESH_TOKEN_SECRET with minimum length 32 characters'
+    );
+  }
+}
 
 export const isTest = env.nodeEnv === 'test';

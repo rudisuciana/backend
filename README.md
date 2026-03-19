@@ -55,6 +55,15 @@ test/
    npm run dev
    ```
 
+## Security Configuration
+- Gunakan `CORS_ORIGIN` untuk membatasi origin yang diizinkan mengakses API dari browser.
+- Di environment `production`, nilai berikut wajib minimal 32 karakter:
+  - `WEBSITE_API_KEY`
+  - `USER_API_KEY`
+  - `ACCESS_TOKEN_SECRET`
+  - `REFRESH_TOKEN_SECRET`
+- Server membatasi ukuran body request JSON/form hingga `10kb` untuk mengurangi risiko abuse payload besar.
+
 ## Endpoint Utama
 - `GET /health`
 - `GET /api/v1/website/ping`

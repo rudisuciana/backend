@@ -9,8 +9,15 @@ export const errorHandler = (
 ): void => {
   logger.error({ err, path: req.path, method: req.method }, 'Unhandled error');
 
-  res.status(500).json({
+  const statusCode =
+    'status' in err && typeof err.status === 'number'
+      ? err.status
+      : 'statusCode' in err && typeof err.statusCode === 'number'
+        ? err.statusCode
+        : 500;
+
+  res.status(statusCode).json({
     success: false,
-    message: 'Internal server error'
+    message: statusCode === 413 ? 'Payload too large' : 'Internal server error'
   });
 };

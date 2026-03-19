@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import pinoHttp from 'pino-http';
 import swaggerUi from 'swagger-ui-express';
+import { env } from './config/env';
 import { logger } from './config/logger';
 import { loadOpenApiDocument } from './docs';
 import { getMySQLPool } from './infrastructure/mysql';
@@ -21,9 +22,16 @@ export const createApp = () => {
     legacyHeaders: false
   });
 
+  app.disable('x-powered-by');
   app.use(helmet());
-  app.use(cors());
-  app.use(express.json());
+  app.use(
+    cors({
+      origin: env.cors.origin,
+      optionsSuccessStatus: 200
+    })
+  );
+  app.use(express.json({ limit: '10kb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10kb' }));
   app.use(pinoHttp({ logger }));
 
   app.get('/health', healthLimiter, async (_req, res) => {
