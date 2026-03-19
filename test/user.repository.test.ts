@@ -67,4 +67,14 @@ describe('UserRepository', () => {
       avatar: null
     });
   });
+
+  it('should return whitelist ip for api key access lookup', async () => {
+    const query = vi.fn().mockResolvedValue([[{ whitelistip: '127.0.0.1,10.0.0.1' }]]);
+
+    const repository = new UserRepository({ query } as never);
+    const access = await repository.getApiKeyAccessByApiKey('second-key');
+
+    expect(query).toHaveBeenCalledOnce();
+    expect(access).toEqual({ whitelistip: '127.0.0.1,10.0.0.1' });
+  });
 });

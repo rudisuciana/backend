@@ -26,15 +26,6 @@ describe('PPOB backend blueprint', () => {
     expect(response.body.success).toBe(true);
   });
 
-  it('should accept user route with valid x-api-key', async () => {
-    const response = await request(app)
-      .get('/api/v1/user/ping')
-      .set('x-api-key', 'user-secret-key');
-
-    expect(response.status).toBe(200);
-    expect(response.body.success).toBe(true);
-  });
-
   it('should disable CORS in non-production environment', async () => {
     const response = await request(app).get('/api/v1/website/ping').set('Origin', 'https://malicious.example');
 

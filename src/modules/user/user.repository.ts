@@ -9,6 +9,10 @@ export interface UserProfile {
   avatar: string | null;
 }
 
+export interface UserApiKeyAccess {
+  whitelistip: string | null;
+}
+
 interface UserRow extends RowDataPacket {
   id: number;
   name: string;
@@ -16,6 +20,7 @@ interface UserRow extends RowDataPacket {
   balance: number;
   status: string;
   avatar: string | null;
+  whitelistip: string | null;
 }
 
 export class UserRepository {
@@ -42,6 +47,24 @@ export class UserRepository {
       balance: Number(row.balance),
       status: row.status,
       avatar: row.avatar
+    };
+  }
+
+  async getApiKeyAccessByApiKey(apiKey: string): Promise<UserApiKeyAccess | null> {
+    const [rows] = await this.mysqlPool.query<UserRow[]>(
+      `SELECT whitelistip
+       FROM users
+       WHERE apikey = ?
+       LIMIT 1`,
+      [apiKey]
+    );
+
+    if (!rows.length) {
+      return null;
+    }
+
+    return {
+      whitelistip: rows[0].whitelistip
     };
   }
 

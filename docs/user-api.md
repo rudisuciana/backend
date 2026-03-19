@@ -7,9 +7,11 @@ Channel ini dipakai user untuk mengambil informasi akun, dan akan dipakai juga u
 - Local: `http://localhost:3000`
 
 ## Autentikasi
-Semua endpoint user wajib header:
+Semua endpoint user wajib:
 
 - `x-api-key: <USER_API_KEY>`
+- IP request harus ada di kolom `users.whitelistip` milik user yang terkait dengan `x-api-key`.
+- Jika `whitelistip` berisi banyak IP, pisahkan dengan koma `,` (contoh: `127.0.0.1,::ffff:127.0.0.1`).
 
 ## Endpoint
 
@@ -60,7 +62,7 @@ curl --location 'http://localhost:3000/api/v1/user/profile' \
 ```json
 {
   "success": false,
-  "message": "Missing x-api-key header"
+  "message": "x-api-key header is required"
 }
 ```
 
@@ -68,6 +70,14 @@ curl --location 'http://localhost:3000/api/v1/user/profile' \
 ```json
 {
   "success": false,
-  "message": "Invalid x-api-key"
+  "message": "Invalid API key"
+}
+```
+
+**Response 403 - IP tidak termasuk whitelist**
+```json
+{
+  "success": false,
+  "message": "IP is not allowed"
 }
 ```
