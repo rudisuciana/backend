@@ -6,7 +6,7 @@ import { google } from 'googleapis';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
 import { AuthRepository } from './auth.repository';
-import type { AccessTokenPayload, AuthTokens, AuthUser } from './auth.types';
+import type { AuthTokens, AuthUser } from './auth.types';
 
 interface RegisterInput {
   username: string;
@@ -144,7 +144,7 @@ export class AuthService {
     return this.issueAndStoreTokens(user);
   }
 
-  async refreshToken(refreshToken: string): Promise<AccessTokenPayload> {
+  async refreshToken(refreshToken: string): Promise<AuthTokens> {
     let payload: jwt.JwtPayload;
     try {
       payload = jwt.verify(refreshToken, env.auth.refreshTokenSecret) as jwt.JwtPayload;
@@ -171,10 +171,11 @@ export class AuthService {
 
     const isTokenMatch = await bcrypt.compare(refreshToken, user.refreshTokenHash);
     if (!isTokenMatch) {
-      throw new Error('INVALID_REFRESH_TOKEN');
+      await this.authRepository.setRefreshTokenHash(user.id, null, null);
+      throw new Error('REFRESH_TOKEN_REUSE_DETECTED');
     }
 
-    return { accessToken: await this.issueAndStoreAccessToken(user) };
+    return this.issueAndStoreTokens(user);
   }
 
   async logout(refreshToken: string): Promise<void> {

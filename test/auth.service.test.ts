@@ -123,7 +123,7 @@ describe('AuthService Gmail restriction', () => {
     expect(refreshPayload.exp! - refreshPayload.iat!).toBe(7 * 24 * 60 * 60);
   });
 
-  it('should refresh only access token without issuing a new refresh token', async () => {
+  it('should rotate refresh token when refreshing access token', async () => {
     const userId = 12;
     const refreshToken = jwt.sign({}, env.auth.refreshTokenSecret, {
       subject: String(userId),
@@ -157,8 +157,8 @@ describe('AuthService Gmail restriction', () => {
     const refreshed = await authService.refreshToken(refreshToken);
 
     expect(refreshed.accessToken).toBeTypeOf('string');
-    expect((refreshed as Record<string, unknown>).refreshToken).toBeUndefined();
-    expect(authRepository.setRefreshTokenHash).not.toHaveBeenCalled();
+    expect(refreshed.refreshToken).toBeTypeOf('string');
+    expect(authRepository.setRefreshTokenHash).toHaveBeenCalledOnce();
     expect(redisClient.set).toHaveBeenCalledOnce();
   });
 
@@ -193,6 +193,40 @@ describe('AuthService Gmail restriction', () => {
     const authService = new AuthService(authRepository as never, redisClient as never);
 
     await expect(authService.refreshToken(refreshToken)).rejects.toThrow('INVALID_REFRESH_TOKEN');
+  });
+
+  it('should revoke refresh session when reuse is detected', async () => {
+    const userId = 15;
+    const refreshToken = jwt.sign({}, env.auth.refreshTokenSecret, {
+      subject: String(userId),
+      expiresIn: env.auth.refreshTokenExpiresIn as jwt.SignOptions['expiresIn']
+    });
+
+    const authRepository = {
+      getUserById: vi.fn().mockResolvedValue({
+        id: userId,
+        username: 'reuse-user',
+        name: 'Reuse User',
+        email: 'reuse@gmail.com',
+        phone: '0812311111',
+        apikey: 'apikey',
+        passwordHash: 'hash',
+        googleId: null,
+        emailVerifiedAt: new Date().toISOString(),
+        refreshTokenHash: await bcrypt.hash('different-token', 10),
+        refreshTokenExpired: new Date(Date.now() + 60_000).toISOString(),
+        status: 'active'
+      }),
+      setRefreshTokenHash: vi.fn()
+    };
+    const redisClient = {
+      set: vi.fn()
+    };
+    const authService = new AuthService(authRepository as never, redisClient as never);
+
+    await expect(authService.refreshToken(refreshToken)).rejects.toThrow('REFRESH_TOKEN_REUSE_DETECTED');
+    expect(authRepository.setRefreshTokenHash).toHaveBeenCalledOnce();
+    expect(authRepository.setRefreshTokenHash).toHaveBeenCalledWith(userId, null, null);
   });
 
   it('should clear refresh session on logout when refresh token is valid', async () => {

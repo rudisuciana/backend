@@ -11,7 +11,8 @@ Channel ini dipakai untuk registrasi, login, verifikasi OTP, refresh token, dan 
 - Hasil login mengembalikan:
   - `accessToken` (JWT, disimpan sementara di Redis sesuai TTL)
   - `refreshToken` (JWT, dipakai untuk minta access token baru)
-- Hasil refresh hanya mengembalikan `accessToken` baru (tanpa refresh token baru).
+- Backend juga mengirim `refresh_token` (HttpOnly cookie) dan `csrf_token` cookie untuk alur cookie-based auth.
+- Hasil refresh mengembalikan `accessToken` **dan** `refreshToken` baru (refresh rotation).
 - Untuk akses endpoint produk website gunakan:
   - `Authorization: Bearer <accessToken>`
 
@@ -84,7 +85,11 @@ Login menggunakan `email` atau `username` + `password`.
 ```
 
 ### 4) POST `/api/auth/refresh-token`
-Membuat access token baru menggunakan refresh token tanpa menerbitkan refresh token baru. Jika refresh token sudah expired, user harus login ulang.
+Membuat access token baru menggunakan refresh token dan merotasi refresh token (token lama tidak berlaku lagi).
+
+Anda bisa kirim refresh token lewat:
+- body `refreshToken` (kompatibilitas lama), atau
+- cookie HttpOnly `refresh_token` (disarankan). Untuk mode cookie wajib header `x-csrf-token` yang nilainya sama dengan cookie `csrf_token`.
 
 **Body Request**
 ```json
@@ -98,7 +103,8 @@ Membuat access token baru menggunakan refresh token tanpa menerbitkan refresh to
 {
   "success": true,
   "data": {
-    "accessToken": "<NEW_ACCESS_TOKEN>"
+    "accessToken": "<NEW_ACCESS_TOKEN>",
+    "refreshToken": "<NEW_REFRESH_TOKEN>"
   }
 }
 ```
@@ -106,6 +112,8 @@ Membuat access token baru menggunakan refresh token tanpa menerbitkan refresh to
 
 ### 5) POST `/api/auth/logout`
 Logout user dengan menghapus sesi refresh token di server (refresh hash + refresh expiry di database akan dikosongkan).
+
+Anda bisa kirim refresh token lewat body atau cookie `refresh_token` (mode cookie wajib `x-csrf-token`).
 
 **Body Request**
 ```json
@@ -252,10 +260,9 @@ atau
 Tidak masalah refresh token di-hash di backend, karena frontend **tetap menyimpan token asli** dari response login. Hash hanya disimpan server untuk verifikasi.
 
 Alur yang disarankan:
-1. Saat login sukses, simpan `accessToken` (memory) dan `refreshToken` (HttpOnly cookie lebih aman, atau storage sesuai kebijakan aplikasi).
-2. Jika request API gagal 401 karena access token expired, panggil `POST /api/auth/refresh-token` dengan refresh token asli.
-3. Jika refresh sukses, update access token dan ulangi request sebelumnya.
+1. Saat login sukses, simpan `accessToken` (memory). Biarkan backend mengelola `refresh_token` di HttpOnly cookie.
+2. Simpan `csrf_token` dari cookie non-HttpOnly, kirim nilainya ke header `x-csrf-token` saat memanggil refresh/logout berbasis cookie.
+3. Jika request API gagal 401 karena access token expired, panggil `POST /api/auth/refresh-token`.
+4. Jika refresh sukses, update access token dan ulangi request sebelumnya.
 4. Jika refresh gagal (401 Invalid refresh token), paksa logout user (hapus token lokal, arahkan ke halaman login).
 5. Saat user klik logout, panggil `POST /api/auth/logout` agar sesi refresh di server diinvalidasi.
-
-Catatan: Karena endpoint refresh tidak merotasi refresh token, frontend tetap menggunakan refresh token yang sama sampai masa berlakunya habis atau sampai logout.

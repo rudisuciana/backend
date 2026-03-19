@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { AuthService } from './auth.service';
 
@@ -34,7 +35,7 @@ const resetPasswordSchema = z.object({
 });
 
 const refreshSchema = z.object({
-  refreshToken: z.string().trim().min(20)
+  refreshToken: z.string().trim().min(20).optional()
 });
 
 const googleSchema = z.object({
@@ -64,6 +65,10 @@ const mapAuthError = (error: unknown): { status: number; message: string } => {
       return { status: 404, message: 'User not found' };
     case 'INVALID_REFRESH_TOKEN':
       return { status: 401, message: 'Invalid refresh token' };
+    case 'REFRESH_TOKEN_REUSE_DETECTED':
+      return { status: 401, message: 'Refresh token reuse detected, please login again' };
+    case 'CSRF_TOKEN_INVALID':
+      return { status: 403, message: 'Invalid CSRF token' };
     case 'GOOGLE_ACCOUNT_NOT_REGISTERED':
       return { status: 404, message: 'Google account is not registered' };
     case 'GOOGLE_AUTH_NOT_CONFIGURED':
@@ -79,6 +84,93 @@ const mapAuthError = (error: unknown): { status: number; message: string } => {
 
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  private readonly refreshCookieName = 'refresh_token';
+  private readonly csrfCookieName = 'csrf_token';
+  private readonly refreshCookieMaxAgeMs = 7 * 24 * 60 * 60 * 1000;
+
+  private parseCookies(req: Request): Record<string, string> {
+    const header = req.headers.cookie;
+    if (!header) {
+      return {};
+    }
+
+    return header.split(';').reduce<Record<string, string>>((accumulator, segment) => {
+      const [key, ...rest] = segment.split('=');
+      if (!key || !rest.length) {
+        return accumulator;
+      }
+
+      accumulator[key.trim()] = decodeURIComponent(rest.join('=').trim());
+      return accumulator;
+    }, {});
+  }
+
+  private getRefreshToken(req: Request): { value: string | null; source: 'body' | 'cookie' | null } {
+    const parsed = refreshSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return { value: null, source: null };
+    }
+
+    if (parsed.data.refreshToken) {
+      return { value: parsed.data.refreshToken, source: 'body' };
+    }
+
+    const cookies = this.parseCookies(req);
+    const refreshToken = cookies[this.refreshCookieName];
+    if (!refreshToken) {
+      return { value: null, source: null };
+    }
+
+    return { value: refreshToken, source: 'cookie' };
+  }
+
+  private ensureCsrf(req: Request): void {
+    const cookies = this.parseCookies(req);
+    const csrfCookie = cookies[this.csrfCookieName];
+    const csrfHeader = req.header('x-csrf-token')?.trim();
+
+    if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+      throw new Error('CSRF_TOKEN_INVALID');
+    }
+  }
+
+  private setAuthCookies(res: Response, refreshToken: string): void {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const csrfToken = randomUUID();
+
+    res.cookie(this.refreshCookieName, refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict',
+      maxAge: this.refreshCookieMaxAgeMs,
+      path: '/api/auth'
+    });
+    res.cookie(this.csrfCookieName, csrfToken, {
+      httpOnly: false,
+      secure: isProduction,
+      sameSite: 'strict',
+      maxAge: this.refreshCookieMaxAgeMs,
+      path: '/api/auth'
+    });
+  }
+
+  private clearAuthCookies(res: Response): void {
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    res.clearCookie(this.refreshCookieName, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict',
+      path: '/api/auth'
+    });
+    res.clearCookie(this.csrfCookieName, {
+      httpOnly: false,
+      secure: isProduction,
+      sameSite: 'strict',
+      path: '/api/auth'
+    });
+  }
 
   registerManual = async (req: Request, res: Response): Promise<void> => {
     const parsed = registerSchema.safeParse(req.body);
@@ -125,6 +217,7 @@ export class AuthController {
 
     try {
       const tokens = await this.authService.login(parsed.data);
+      this.setAuthCookies(res, tokens.refreshToken);
       res.json({ success: true, data: tokens });
     } catch (error) {
       const mapped = mapAuthError(error);
@@ -133,14 +226,19 @@ export class AuthController {
   };
 
   refreshToken = async (req: Request, res: Response): Promise<void> => {
-    const parsed = refreshSchema.safeParse(req.body);
-    if (!parsed.success) {
+    const tokenInput = this.getRefreshToken(req);
+    if (!tokenInput.value) {
       res.status(400).json({ success: false, message: 'Invalid refresh payload' });
       return;
     }
 
     try {
-      const tokens = await this.authService.refreshToken(parsed.data.refreshToken);
+      if (tokenInput.source === 'cookie') {
+        this.ensureCsrf(req);
+      }
+
+      const tokens = await this.authService.refreshToken(tokenInput.value);
+      this.setAuthCookies(res, tokens.refreshToken);
       res.json({ success: true, data: tokens });
     } catch (error) {
       const mapped = mapAuthError(error);
@@ -149,14 +247,19 @@ export class AuthController {
   };
 
   logout = async (req: Request, res: Response): Promise<void> => {
-    const parsed = refreshSchema.safeParse(req.body);
-    if (!parsed.success) {
+    const tokenInput = this.getRefreshToken(req);
+    if (!tokenInput.value) {
       res.status(400).json({ success: false, message: 'Invalid logout payload' });
       return;
     }
 
     try {
-      await this.authService.logout(parsed.data.refreshToken);
+      if (tokenInput.source === 'cookie') {
+        this.ensureCsrf(req);
+      }
+
+      await this.authService.logout(tokenInput.value);
+      this.clearAuthCookies(res);
       res.json({ success: true, message: 'Logout successful' });
     } catch (error) {
       const mapped = mapAuthError(error);
@@ -203,6 +306,7 @@ export class AuthController {
 
     try {
       const tokens = await this.authService.registerWithGoogle(parsed.data);
+      this.setAuthCookies(res, tokens.refreshToken);
       res.status(201).json({ success: true, data: tokens });
     } catch (error) {
       const mapped = mapAuthError(error);
@@ -219,6 +323,7 @@ export class AuthController {
 
     try {
       const tokens = await this.authService.loginWithGoogle(parsed.data);
+      this.setAuthCookies(res, tokens.refreshToken);
       res.json({ success: true, data: tokens });
     } catch (error) {
       const mapped = mapAuthError(error);

@@ -65,12 +65,32 @@ describe('Auth API validation', () => {
     expect(response.body.success).toBe(false);
   });
 
+  it('should require csrf token when refresh-token uses cookie-based auth', async () => {
+    const response = await request(app)
+      .post('/api/auth/refresh-token')
+      .set('Cookie', ['refresh_token=longenoughtokenlongenoughtoken'])
+      .send({});
+
+    expect(response.status).toBe(403);
+    expect(response.body.success).toBe(false);
+  });
+
   it('should validate logout payload', async () => {
     const response = await request(app).post('/api/auth/logout').send({
       refreshToken: 'short'
     });
 
     expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+  });
+
+  it('should require csrf token when logout uses cookie-based auth', async () => {
+    const response = await request(app)
+      .post('/api/auth/logout')
+      .set('Cookie', ['refresh_token=longenoughtokenlongenoughtoken'])
+      .send({});
+
+    expect(response.status).toBe(403);
     expect(response.body.success).toBe(false);
   });
 
