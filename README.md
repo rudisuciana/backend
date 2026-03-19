@@ -27,9 +27,9 @@ src/
   server.ts
 docs/
   openapi.yaml
-  website-api.md
+  website/api.md
   auth-api.md
-  user-api.md
+  user/api.md
 database/mysql/
   schema.sql
   seed.sql
@@ -88,9 +88,9 @@ test/
 - `GET /docs`
 
 ## Dokumentasi Terpisah (.md)
-- Website API: `docs/website-api.md`
+- Website API: `docs/website/api.md`
 - Auth API: `docs/auth-api.md`
-- User API: `docs/user-api.md`
+- User API: `docs/user/api.md`
 
 Catatan: User API digunakan oleh user untuk mengambil informasi akun dan disiapkan untuk endpoint transaksi pada pengembangan berikutnya.
 Selain itu, access token hasil login/refresh disimpan sementara di Redis sesuai TTL token, dan endpoint website products membutuhkan header `Authorization: Bearer <access_token>`.
