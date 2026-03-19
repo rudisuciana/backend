@@ -21,6 +21,30 @@ interface UserRow extends RowDataPacket {
 export class UserRepository {
   constructor(private readonly mysqlPool: Pool) {}
 
+  async getProfileByApiKey(apiKey: string): Promise<UserProfile | null> {
+    const [rows] = await this.mysqlPool.query<UserRow[]>(
+      `SELECT id, name, email, balance, status, avatar
+       FROM users
+       WHERE apikey = ?
+       LIMIT 1`,
+      [apiKey]
+    );
+
+    if (!rows.length) {
+      return null;
+    }
+
+    const row = rows[0];
+    return {
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      balance: Number(row.balance),
+      status: row.status,
+      avatar: row.avatar
+    };
+  }
+
   async getProfileById(id: number): Promise<UserProfile | null> {
     const [rows] = await this.mysqlPool.query<UserRow[]>(
       `SELECT id, name, email, balance, status, avatar

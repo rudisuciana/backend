@@ -105,14 +105,7 @@ paths:
       tags: [User]
       security:
         - ApiKeyAuth: []
-      summary: Get user account info by userId (for information and transaction preparation)
-      parameters:
-        - name: userId
-          in: query
-          required: true
-          schema:
-            type: integer
-            minimum: 1
+      summary: Get current user account info by x-api-key (for information and transaction preparation)
       responses:
         '200':
           description: User profile found
@@ -125,8 +118,6 @@ paths:
                     type: boolean
                   data:
                     $ref: '#/components/schemas/UserProfile'
-        '400':
-          description: Invalid userId
         '404':
           description: User not found
   /api/v1/auth/register:

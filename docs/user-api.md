@@ -30,12 +30,12 @@ curl --location 'http://localhost:3000/api/v1/user/ping' \
 }
 ```
 
-### 2) GET `/api/v1/user/profile?userId=1`
-Mengambil informasi akun user berdasarkan ID (siap dipakai sebagai data awal transaksi).
+### 2) GET `/api/v1/user/profile`
+Mengambil informasi akun user berdasarkan `x-api-key` milik user yang sedang mengakses (siap dipakai sebagai data awal transaksi).
 
 **Contoh Request**
 ```bash
-curl --location 'http://localhost:3000/api/v1/user/profile?userId=1' \
+curl --location 'http://localhost:3000/api/v1/user/profile' \
   --header 'x-api-key: user-secret-key'
 ```
 
@@ -51,14 +51,6 @@ curl --location 'http://localhost:3000/api/v1/user/profile?userId=1' \
     "status": "active",
     "avatar": "https://example.com/avatars/demo-user.png"
   }
-}
-```
-
-**Response 400**
-```json
-{
-  "success": false,
-  "message": "Invalid query parameter userId"
 }
 ```
 

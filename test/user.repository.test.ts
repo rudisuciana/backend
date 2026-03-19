@@ -39,4 +39,32 @@ describe('UserRepository', () => {
     expect(query).toHaveBeenCalledOnce();
     expect(profile).toBeNull();
   });
+
+  it('should map user profile by api key', async () => {
+    const query = vi.fn().mockResolvedValue([
+      [
+        {
+          id: 2,
+          name: 'Second User',
+          email: 'second@example.com',
+          balance: '250000.00',
+          status: 'active',
+          avatar: null
+        }
+      ]
+    ]);
+
+    const repository = new UserRepository({ query } as never);
+    const profile = await repository.getProfileByApiKey('second-key');
+
+    expect(query).toHaveBeenCalledOnce();
+    expect(profile).toEqual({
+      id: 2,
+      name: 'Second User',
+      email: 'second@example.com',
+      balance: 250000,
+      status: 'active',
+      avatar: null
+    });
+  });
 });

@@ -1,10 +1,5 @@
 import type { Request, Response } from 'express';
-import { z } from 'zod';
 import { UserService } from './user.service';
-
-const userQuerySchema = z.object({
-  userId: z.coerce.number().int().positive()
-});
 
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -17,17 +12,16 @@ export class UserController {
   };
 
   getProfile = async (req: Request, res: Response): Promise<void> => {
-    const parseResult = userQuerySchema.safeParse(req.query);
-
-    if (!parseResult.success) {
-      res.status(400).json({
+    const apiKey = req.header('x-api-key');
+    if (!apiKey) {
+      res.status(401).json({
         success: false,
-        message: 'Invalid query parameter userId'
+        message: 'x-api-key header is required'
       });
       return;
     }
 
-    const profile = await this.userService.getProfile(parseResult.data.userId);
+    const profile = await this.userService.getProfileByApiKey(apiKey);
 
     if (!profile) {
       res.status(404).json({

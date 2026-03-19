@@ -70,7 +70,7 @@ test/
 - `GET /api/v1/website/ping`
 - `GET /api/v1/website/products`
 - `GET /api/v1/user/ping`
-- `GET /api/v1/user/profile?userId=1`
+- `GET /api/v1/user/profile`
 - `POST /api/v1/auth/register`
 - `POST /api/v1/auth/verify-otp`
 - `POST /api/v1/auth/login`
