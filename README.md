@@ -65,6 +65,13 @@ test/
 ## Database
 - Jalankan SQL schema: `database/mysql/schema.sql`
 - Jalankan SQL seed: `database/mysql/seed.sql`
+- Tabel utama blueprint:
+  - `users` (dengan kolom `apikey`)
+  - `products`
+  - `transactions`
+  - `histories`
+  - `deposits`
+  - `settings`
 
 ## Testing
 ```bash

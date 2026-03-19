@@ -1,14 +1,15 @@
 USE ppob_blueprint;
 
-INSERT INTO users (name, email, balance, status)
+INSERT INTO users (name, email, apikey, balance, status)
 VALUES
-  ('Demo User', 'demo@example.com', 500000, 'active')
+  ('Demo User', 'demo@example.com', 'user-secret-key', 500000, 'active')
 ON DUPLICATE KEY UPDATE
   name = VALUES(name),
+  apikey = VALUES(apikey),
   balance = VALUES(balance),
   status = VALUES(status);
 
-INSERT INTO ppob_products (code, name, category, price, admin_fee, is_active)
+INSERT INTO products (code, name, category, price, admin_fee, is_active)
 VALUES
   ('PLN20', 'Token PLN 20.000', 'electricity', 20500, 2500, 1),
   ('PULSA10', 'Pulsa 10.000', 'mobile-credit', 11500, 1500, 1),
@@ -18,4 +19,36 @@ ON DUPLICATE KEY UPDATE
   category = VALUES(category),
   price = VALUES(price),
   admin_fee = VALUES(admin_fee),
+  is_active = VALUES(is_active);
+
+INSERT INTO deposits (user_id, reference_no, amount, status)
+VALUES
+  (1, 'DEP-0001', 200000, 'success')
+ON DUPLICATE KEY UPDATE
+  amount = VALUES(amount),
+  status = VALUES(status);
+
+INSERT INTO transactions (invoice_no, user_id, product_id, amount, admin_fee, total_amount, status)
+VALUES
+  ('INV-0001', 1, 1, 20500, 2500, 23000, 'success')
+ON DUPLICATE KEY UPDATE
+  amount = VALUES(amount),
+  admin_fee = VALUES(admin_fee),
+  total_amount = VALUES(total_amount),
+  status = VALUES(status);
+
+INSERT INTO histories (user_id, transaction_id, action, description)
+VALUES
+  (1, 1, 'purchase', 'Pembelian token PLN berhasil')
+ON DUPLICATE KEY UPDATE
+  action = VALUES(action),
+  description = VALUES(description);
+
+INSERT INTO settings (`key`, `value`, description, is_active)
+VALUES
+  ('maintenance_mode', 'false', 'Global maintenance toggle', 1),
+  ('default_admin_fee', '1500', 'Fallback admin fee for PPOB products', 1)
+ON DUPLICATE KEY UPDATE
+  `value` = VALUES(`value`),
+  description = VALUES(description),
   is_active = VALUES(is_active);

@@ -37,7 +37,7 @@ export class WebsiteRepository {
 
     const [rows] = await this.mysqlPool.query<ProductRow[]>(
       `SELECT id, code, name, category, price, admin_fee, is_active
-       FROM ppob_products
+       FROM products
        WHERE is_active = 1
        ORDER BY id ASC`
     );
