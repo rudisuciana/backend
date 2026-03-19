@@ -14,7 +14,6 @@ export const env = {
   cors: {
     origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000'
   },
-  websiteApiKey: process.env.WEBSITE_API_KEY ?? 'website-secret-key',
   userApiKey: process.env.USER_API_KEY ?? 'user-secret-key',
   mysql: {
     host: process.env.MYSQL_HOST ?? 'localhost',
@@ -46,14 +45,13 @@ export const env = {
 
 if (env.nodeEnv === 'production') {
   const hasMinimumSecretLength =
-    env.websiteApiKey.length >= 32 &&
     env.userApiKey.length >= 32 &&
     env.auth.accessTokenSecret.length >= 32 &&
     env.auth.refreshTokenSecret.length >= 32;
 
   if (!hasMinimumSecretLength) {
     throw new Error(
-      'Production requires WEBSITE_API_KEY, USER_API_KEY, ACCESS_TOKEN_SECRET, and REFRESH_TOKEN_SECRET with minimum length 32 characters'
+      'Production requires USER_API_KEY, ACCESS_TOKEN_SECRET, and REFRESH_TOKEN_SECRET with minimum length 32 characters'
     );
   }
 }

@@ -1,10 +1,9 @@
 import type { NextFunction, Request, Response } from 'express';
 import { env } from '../config/env';
 
-export type ApiClientType = 'website' | 'user';
+export type ApiClientType = 'user';
 
 const keyByClient: Record<ApiClientType, string> = {
-  website: env.websiteApiKey,
   user: env.userApiKey
 };
 

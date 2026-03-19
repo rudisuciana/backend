@@ -1,6 +1,6 @@
 # PPOB Backend Blueprint (TypeScript + MySQL + Redis)
 
-Blueprint backend profesional untuk PPOB dengan pemisahan modul Website, User, dan Auth, autentikasi `x-api-key` + JWT token (access/refresh), logger, dokumentasi API, serta skema database MySQL.
+Blueprint backend profesional untuk PPOB dengan pemisahan modul Website, User, dan Auth, autentikasi `x-api-key` (khusus user API) + JWT token (access/refresh), logger, dokumentasi API, serta skema database MySQL.
 
 ## Stack
 - Node.js + TypeScript
@@ -59,7 +59,6 @@ test/
 - Akses browser dari frontend (cross-origin) hanya dibuka saat `NODE_ENV=production`.
 - Gunakan `CORS_ORIGIN` sebagai origin frontend yang diizinkan pada mode production.
 - Di environment `production`, nilai berikut wajib minimal 32 karakter:
-  - `WEBSITE_API_KEY`
   - `USER_API_KEY`
   - `ACCESS_TOKEN_SECRET`
   - `REFRESH_TOKEN_SECRET`
