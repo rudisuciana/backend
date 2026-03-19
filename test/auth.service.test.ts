@@ -57,7 +57,8 @@ describe('AuthService Gmail restriction', () => {
 
   it('should store issued access token in redis with ttl', async () => {
     const authRepository = {
-      setRefreshTokenHash: vi.fn()
+      setRefreshTokenHash: vi.fn(),
+      createSession: vi.fn()
     };
     const redisClient = {
       set: vi.fn()
@@ -75,6 +76,12 @@ describe('AuthService Gmail restriction', () => {
       emailVerifiedAt: new Date().toISOString(),
       refreshTokenHash: null,
       refreshTokenExpired: null,
+      multilogin: true,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      mfaEnabled: false,
+      mfaOtpHash: null,
+      mfaOtpExpired: null,
       status: 'active'
     });
 
@@ -90,7 +97,8 @@ describe('AuthService Gmail restriction', () => {
 
   it('should issue access token 15m and refresh token 7d by default', async () => {
     const authRepository = {
-      setRefreshTokenHash: vi.fn()
+      setRefreshTokenHash: vi.fn(),
+      createSession: vi.fn()
     };
     const redisClient = {
       set: vi.fn()
@@ -108,6 +116,12 @@ describe('AuthService Gmail restriction', () => {
       emailVerifiedAt: new Date().toISOString(),
       refreshTokenHash: null,
       refreshTokenExpired: null,
+      multilogin: true,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      mfaEnabled: false,
+      mfaOtpHash: null,
+      mfaOtpExpired: null,
       status: 'active'
     });
 
@@ -145,9 +159,16 @@ describe('AuthService Gmail restriction', () => {
         emailVerifiedAt: new Date().toISOString(),
         refreshTokenHash,
         refreshTokenExpired,
+        multilogin: true,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        mfaEnabled: false,
+        mfaOtpHash: null,
+        mfaOtpExpired: null,
         status: 'active'
       }),
-      setRefreshTokenHash: vi.fn()
+      setRefreshTokenHash: vi.fn(),
+      createSession: vi.fn()
     };
     const redisClient = {
       set: vi.fn()
@@ -183,6 +204,12 @@ describe('AuthService Gmail restriction', () => {
         emailVerifiedAt: new Date().toISOString(),
         refreshTokenHash,
         refreshTokenExpired: new Date(Date.now() - 60_000).toISOString(),
+        multilogin: true,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        mfaEnabled: false,
+        mfaOtpHash: null,
+        mfaOtpExpired: null,
         status: 'active'
       }),
       setRefreshTokenHash: vi.fn()
@@ -215,9 +242,16 @@ describe('AuthService Gmail restriction', () => {
         emailVerifiedAt: new Date().toISOString(),
         refreshTokenHash: await bcrypt.hash('different-token', 10),
         refreshTokenExpired: new Date(Date.now() + 60_000).toISOString(),
+        multilogin: true,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        mfaEnabled: false,
+        mfaOtpHash: null,
+        mfaOtpExpired: null,
         status: 'active'
       }),
-      setRefreshTokenHash: vi.fn()
+      setRefreshTokenHash: vi.fn(),
+      createSecurityLog: vi.fn()
     };
     const redisClient = {
       set: vi.fn()
@@ -250,9 +284,17 @@ describe('AuthService Gmail restriction', () => {
         emailVerifiedAt: new Date().toISOString(),
         refreshTokenHash,
         refreshTokenExpired: new Date(Date.now() + 60_000).toISOString(),
+        multilogin: true,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        mfaEnabled: false,
+        mfaOtpHash: null,
+        mfaOtpExpired: null,
         status: 'active'
       }),
-      setRefreshTokenHash: vi.fn()
+      setRefreshTokenHash: vi.fn(),
+      revokeActiveSessions: vi.fn(),
+      createSecurityLog: vi.fn()
     };
     const redisClient = {
       set: vi.fn()
@@ -263,5 +305,81 @@ describe('AuthService Gmail restriction', () => {
 
     expect(authRepository.setRefreshTokenHash).toHaveBeenCalledOnce();
     expect(authRepository.setRefreshTokenHash).toHaveBeenCalledWith(userId, null, null);
+  });
+
+  it('should reject login when account is locked', async () => {
+    const authRepository = {
+      getUserByEmail: vi.fn().mockResolvedValue({
+        id: 31,
+        username: 'locked',
+        name: 'Locked User',
+        email: 'locked@gmail.com',
+        phone: '0800000001',
+        apikey: 'apikey',
+        passwordHash: await bcrypt.hash('Password123!', 10),
+        googleId: null,
+        emailVerifiedAt: new Date().toISOString(),
+        refreshTokenHash: null,
+        refreshTokenExpired: null,
+        multilogin: true,
+        failedLoginAttempts: 6,
+        lockedUntil: new Date(Date.now() + 15 * 60_000).toISOString(),
+        mfaEnabled: false,
+        mfaOtpHash: null,
+        mfaOtpExpired: null,
+        status: 'active'
+      }),
+      getUserByUsername: vi.fn(),
+      incrementFailedLoginAttempts: vi.fn(),
+      clearFailedLoginAttempts: vi.fn(),
+      createSecurityLog: vi.fn()
+    };
+    const authService = new AuthService(authRepository as never, {} as never);
+
+    await expect(
+      authService.login({
+        identity: 'locked@gmail.com',
+        password: 'Password123!'
+      })
+    ).rejects.toThrow('ACCOUNT_LOCKED');
+  });
+
+  it('should require MFA when mfa_enabled is true', async () => {
+    const authRepository = {
+      getUserByEmail: vi.fn().mockResolvedValue({
+        id: 32,
+        username: 'mfa',
+        name: 'MFA User',
+        email: 'mfa@gmail.com',
+        phone: '0800000002',
+        apikey: 'apikey',
+        passwordHash: await bcrypt.hash('Password123!', 10),
+        googleId: null,
+        emailVerifiedAt: new Date().toISOString(),
+        refreshTokenHash: null,
+        refreshTokenExpired: null,
+        multilogin: true,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        mfaEnabled: true,
+        mfaOtpHash: null,
+        mfaOtpExpired: null,
+        status: 'active'
+      }),
+      getUserByUsername: vi.fn(),
+      clearFailedLoginAttempts: vi.fn(),
+      storeMfaOtp: vi.fn(),
+      createSecurityLog: vi.fn()
+    };
+    const redisClient = { set: vi.fn() };
+    const authService = new AuthService(authRepository as never, redisClient as never);
+    vi.spyOn(authService as never, 'sendOtpEmail').mockResolvedValue(undefined);
+
+    await expect(
+      authService.login({
+        identity: 'mfa@gmail.com',
+        password: 'Password123!'
+      })
+    ).rejects.toThrow('MFA_REQUIRED');
   });
 });

@@ -10,6 +10,12 @@ export interface AuthUser {
   emailVerifiedAt: string | null;
   refreshTokenHash: string | null;
   refreshTokenExpired: string | null;
+  multilogin: boolean;
+  failedLoginAttempts: number;
+  lockedUntil: string | null;
+  mfaEnabled: boolean;
+  mfaOtpHash: string | null;
+  mfaOtpExpired: string | null;
   status: string;
 }
 

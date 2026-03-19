@@ -13,6 +13,20 @@ interface RequireAccessTokenDeps {
   redisClient?: Redis;
 }
 
+const resolveAccessSecret = (token: string): string => {
+  const decoded = jwt.decode(token, { complete: true });
+  if (!decoded || typeof decoded !== 'object') {
+    return env.auth.accessTokenSecret;
+  }
+
+  const kid = (decoded.header as jwt.JwtHeader | undefined)?.kid;
+  if (!kid) {
+    return env.auth.accessTokenSecret;
+  }
+
+  return env.auth.accessTokenSecrets[kid] ?? env.auth.accessTokenSecret;
+};
+
 const accessTokenKey = (userId: string, jti: string): string => `auth:access:${userId}:${jti}`;
 
 export const requireAccessToken = (deps?: RequireAccessTokenDeps) => {
@@ -33,7 +47,7 @@ export const requireAccessToken = (deps?: RequireAccessTokenDeps) => {
 
     let payload: AccessTokenPayload;
     try {
-      payload = jwt.verify(token, env.auth.accessTokenSecret) as AccessTokenPayload;
+      payload = jwt.verify(token, resolveAccessSecret(token)) as AccessTokenPayload;
     } catch {
       res.status(401).json({ success: false, message: 'Invalid access token' });
       return;
@@ -54,4 +68,3 @@ export const requireAccessToken = (deps?: RequireAccessTokenDeps) => {
     next();
   };
 };
-

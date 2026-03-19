@@ -13,6 +13,11 @@ Channel ini dipakai untuk registrasi, login, verifikasi OTP, refresh token, dan 
   - `refreshToken` (JWT, dipakai untuk minta access token baru)
 - Backend juga mengirim `refresh_token` (HttpOnly cookie) dan `csrf_token` cookie untuk alur cookie-based auth.
 - Hasil refresh mengembalikan `accessToken` **dan** `refreshToken` baru (refresh rotation).
+- Jika akun mengaktifkan MFA (`mfa_enabled = 1`), login password akan mengembalikan status `202` dan OTP MFA dikirim ke email.
+- Database `users.multilogin` mengatur multi device login:
+  - `true` (default): multi login diizinkan.
+  - `false`: sesi refresh lama akan dicabut saat login/MFA verify berhasil.
+- Proteksi brute-force: akun akan terkunci sementara setelah beberapa kegagalan login berturut-turut.
 - Untuk akses endpoint produk website gunakan:
   - `Authorization: Bearer <accessToken>`
 
@@ -95,6 +100,29 @@ Anda bisa kirim refresh token lewat:
 ```json
 {
   "refreshToken": "<REFRESH_TOKEN>"
+}
+```
+
+
+### 4b) POST `/api/auth/verify-mfa`
+Verifikasi OTP MFA setelah login mengembalikan status `202`.
+
+**Body Request**
+```json
+{
+  "email": "demouser@gmail.com",
+  "otp": "123456"
+}
+```
+
+**Response 200**
+```json
+{
+  "success": true,
+  "data": {
+    "accessToken": "<ACCESS_TOKEN>",
+    "refreshToken": "<REFRESH_TOKEN>"
+  }
 }
 ```
 
@@ -243,6 +271,14 @@ atau
 {
   "success": false,
   "message": "Email is not verified"
+}
+```
+
+**Response 429 - akun terkunci sementara**
+```json
+{
+  "success": false,
+  "message": "Account locked due to multiple failed attempts"
 }
 ```
 

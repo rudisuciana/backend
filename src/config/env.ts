@@ -7,6 +7,33 @@ const toNumber = (value: string | undefined, fallback: number): number => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+// Expected format for key rings:
+// ACCESS_TOKEN_SECRETS="v1:secret1,v2:secret2"
+// REFRESH_TOKEN_SECRETS="v1:secret1,v2:secret2"
+const toKeyRing = (value: string | undefined): Record<string, string> => {
+  if (!value) {
+    return {};
+  }
+
+  return value
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .reduce<Record<string, string>>((accumulator, part) => {
+      const separatorIndex = part.indexOf(':');
+      if (separatorIndex <= 0) {
+        return accumulator;
+      }
+      const kid = part.slice(0, separatorIndex).trim();
+      const secret = part.slice(separatorIndex + 1).trim();
+      if (!kid || !secret) {
+        return accumulator;
+      }
+      accumulator[kid] = secret;
+      return accumulator;
+    }, {});
+};
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: toNumber(process.env.PORT, 3000),
@@ -29,6 +56,10 @@ export const env = {
   auth: {
     accessTokenSecret: process.env.ACCESS_TOKEN_SECRET ?? 'access-secret-key',
     refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET ?? 'refresh-secret-key',
+    accessTokenKid: process.env.ACCESS_TOKEN_KID ?? 'v1',
+    refreshTokenKid: process.env.REFRESH_TOKEN_KID ?? 'v1',
+    accessTokenSecrets: toKeyRing(process.env.ACCESS_TOKEN_SECRETS),
+    refreshTokenSecrets: toKeyRing(process.env.REFRESH_TOKEN_SECRETS),
     accessTokenExpiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN ?? '15m',
     refreshTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN ?? '7d',
     otpTtlSeconds: toNumber(process.env.OTP_TTL_SECONDS, 300)
@@ -43,9 +74,13 @@ export const env = {
 };
 
 if (env.nodeEnv === 'production') {
-  const hasMinimumSecretLength =
-    env.auth.accessTokenSecret.length >= 32 &&
-    env.auth.refreshTokenSecret.length >= 32;
+  const configuredSecrets = [
+    env.auth.accessTokenSecret,
+    env.auth.refreshTokenSecret,
+    ...Object.values(env.auth.accessTokenSecrets),
+    ...Object.values(env.auth.refreshTokenSecrets)
+  ];
+  const hasMinimumSecretLength = configuredSecrets.every((secret) => secret.length >= 32);
 
   if (!hasMinimumSecretLength) {
     throw new Error(

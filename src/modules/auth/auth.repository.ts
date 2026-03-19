@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto';
 import type { Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import type { AuthUser } from './auth.types';
 
+const ACCOUNT_LOCK_THRESHOLD = 5;
+const ACCOUNT_LOCK_DURATION_MINUTES = 15;
+
 interface AuthUserRow extends RowDataPacket {
   id: number;
   username: string;
@@ -14,6 +17,12 @@ interface AuthUserRow extends RowDataPacket {
   email_verified_at: string | null;
   refresh_token_hash: string | null;
   refresh_token_expired: string | null;
+  multilogin: number;
+  failed_login_attempts: number;
+  locked_until: string | null;
+  mfa_enabled: number;
+  mfa_otp_hash: string | null;
+  mfa_otp_expired: string | null;
   status: string;
 }
 
@@ -27,7 +36,7 @@ interface CreateUserInput {
   emailVerified: boolean;
 }
 
-const authUserSelectSql = `SELECT id, username, name, email, phone, apikey, password_hash, google_id, email_verified_at, refresh_token_hash, refresh_token_expired, status
+const authUserSelectSql = `SELECT id, username, name, email, phone, apikey, password_hash, google_id, email_verified_at, refresh_token_hash, refresh_token_expired, multilogin, failed_login_attempts, locked_until, mfa_enabled, mfa_otp_hash, mfa_otp_expired, status
  FROM users`;
 
 const toAuthUser = (row: AuthUserRow): AuthUser => ({
@@ -42,6 +51,12 @@ const toAuthUser = (row: AuthUserRow): AuthUser => ({
   emailVerifiedAt: row.email_verified_at,
   refreshTokenHash: row.refresh_token_hash,
   refreshTokenExpired: row.refresh_token_expired,
+  multilogin: Boolean(row.multilogin),
+  failedLoginAttempts: row.failed_login_attempts ?? 0,
+  lockedUntil: row.locked_until,
+  mfaEnabled: Boolean(row.mfa_enabled),
+  mfaOtpHash: row.mfa_otp_hash,
+  mfaOtpExpired: row.mfa_otp_expired,
   status: row.status
 });
 
@@ -162,6 +177,93 @@ export class AuthRepository {
        SET refresh_token_hash = ?, refresh_token_expired = ?
        WHERE id = ?`,
       [refreshTokenHash, refreshTokenExpired, userId]
+    );
+  }
+
+  async setMultilogin(userId: number, multilogin: boolean): Promise<void> {
+    await this.mysqlPool.execute(
+      `UPDATE users
+       SET multilogin = ?
+       WHERE id = ?`,
+      [multilogin ? 1 : 0, userId]
+    );
+  }
+
+  async clearRefreshSessions(userId: number): Promise<void> {
+    await this.setRefreshTokenHash(userId, null, null);
+    await this.revokeActiveSessions(userId);
+  }
+
+  async incrementFailedLoginAttempts(userId: number): Promise<void> {
+    await this.mysqlPool.execute(
+      `UPDATE users
+       SET failed_login_attempts = failed_login_attempts + 1,
+           locked_until = CASE
+             WHEN failed_login_attempts + 1 >= ? THEN DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? MINUTE)
+             ELSE locked_until
+           END
+       WHERE id = ?`,
+      [ACCOUNT_LOCK_THRESHOLD, ACCOUNT_LOCK_DURATION_MINUTES, userId]
+    );
+  }
+
+  async clearFailedLoginAttempts(userId: number): Promise<void> {
+    await this.mysqlPool.execute(
+      `UPDATE users
+       SET failed_login_attempts = 0, locked_until = NULL
+       WHERE id = ?`,
+      [userId]
+    );
+  }
+
+  async storeMfaOtp(userId: number, otpHash: string, expiredAtIso: string): Promise<void> {
+    await this.mysqlPool.execute(
+      `UPDATE users
+       SET mfa_otp_hash = ?, mfa_otp_expired = ?
+       WHERE id = ?`,
+      [otpHash, expiredAtIso, userId]
+    );
+  }
+
+  async clearMfaOtp(userId: number): Promise<void> {
+    await this.mysqlPool.execute(
+      `UPDATE users
+       SET mfa_otp_hash = NULL, mfa_otp_expired = NULL
+       WHERE id = ?`,
+      [userId]
+    );
+  }
+
+  async createSession(
+    userId: number,
+    refreshTokenHash: string,
+    refreshTokenExpired: string | null
+  ): Promise<void> {
+    if (!refreshTokenExpired) {
+      return;
+    }
+
+    await this.mysqlPool.execute(
+      `INSERT INTO user_sessions (user_id, refresh_token_hash, refresh_token_expired)
+       VALUES (?, ?, ?)`,
+      [userId, refreshTokenHash, refreshTokenExpired]
+    );
+  }
+
+  async revokeActiveSessions(userId: number): Promise<void> {
+    await this.mysqlPool.execute(
+      `UPDATE user_sessions
+       SET revoked_at = CURRENT_TIMESTAMP
+       WHERE user_id = ? AND revoked_at IS NULL`,
+      [userId]
+    );
+  }
+
+  async createSecurityLog(userId: number | null, event: string, metadata?: string): Promise<void> {
+    await this.mysqlPool.execute(
+      `INSERT INTO auth_security_logs (user_id, event, metadata)
+       VALUES (?, ?, ?)`,
+      [userId, event, metadata ?? null]
     );
   }
 

@@ -17,7 +17,8 @@ const registerSchema = z.object({
 
 const loginSchema = z.object({
   identity: z.string().trim().min(3),
-  password: z.string().min(8).max(120)
+  password: z.string().min(8).max(120),
+  singleSession: z.boolean().optional()
 });
 
 const verifyOtpSchema = z.object({
@@ -58,12 +59,16 @@ const mapAuthError = (error: unknown): { status: number; message: string } => {
       return { status: 409, message: 'Phone already used' };
     case 'INVALID_CREDENTIALS':
       return { status: 401, message: 'Invalid credentials' };
+    case 'ACCOUNT_LOCKED':
+      return { status: 429, message: 'Account locked due to multiple failed attempts' };
+    case 'MFA_REQUIRED':
+      return { status: 202, message: 'MFA required. Please verify the OTP sent to your email' };
     case 'EMAIL_NOT_VERIFIED':
       return { status: 403, message: 'Email is not verified' };
     case 'INVALID_OTP':
       return { status: 400, message: 'Invalid OTP' };
     case 'USER_NOT_FOUND':
-      return { status: 404, message: 'User not found' };
+      return { status: 404, message: 'Resource not found' };
     case 'INVALID_REFRESH_TOKEN':
       return { status: 401, message: 'Invalid refresh token' };
     case 'REFRESH_TOKEN_REUSE_DETECTED':
@@ -71,13 +76,15 @@ const mapAuthError = (error: unknown): { status: number; message: string } => {
     case 'CSRF_TOKEN_INVALID':
       return { status: 403, message: 'Invalid CSRF token' };
     case 'GOOGLE_ACCOUNT_NOT_REGISTERED':
-      return { status: 404, message: 'Google account is not registered' };
+      return { status: 404, message: 'Resource not found' };
     case 'GOOGLE_AUTH_NOT_CONFIGURED':
       return { status: 503, message: 'Google auth is not configured' };
     case 'INVALID_GOOGLE_TOKEN':
       return { status: 401, message: 'Invalid Google token' };
     case 'EMAIL_DOMAIN_NOT_ALLOWED':
       return { status: 400, message: 'Only Gmail addresses are allowed' };
+    case 'GOOGLE_ACCOUNT_ALREADY_USED':
+      return { status: 409, message: 'Resource conflict' };
     default:
       return { status: 500, message: 'Internal server error' };
   }
@@ -222,6 +229,23 @@ export class AuthController {
     try {
       await this.authService.verifyRegisterOtp(parsed.data);
       res.json({ success: true, message: 'Email verified successfully' });
+    } catch (error) {
+      const mapped = mapAuthError(error);
+      res.status(mapped.status).json({ success: false, message: mapped.message });
+    }
+  };
+
+  verifyMfa = async (req: Request, res: Response): Promise<void> => {
+    const parsed = verifyOtpSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ success: false, message: 'Invalid verify OTP payload' });
+      return;
+    }
+
+    try {
+      const tokens = await this.authService.verifyMfaLogin(parsed.data);
+      this.setAuthCookies(res, tokens.refreshToken);
+      res.json({ success: true, data: tokens });
     } catch (error) {
       const mapped = mapAuthError(error);
       res.status(mapped.status).json({ success: false, message: mapped.message });

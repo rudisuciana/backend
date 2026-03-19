@@ -36,6 +36,7 @@ authRouter.use(authRateLimiter);
 
 authRouter.post('/register', authController.registerManual);
 authRouter.post('/verify-otp', authController.verifyOtp);
+authRouter.post('/verify-mfa', authController.verifyMfa);
 authRouter.post('/login', authController.login);
 authRouter.post('/refresh-token', authController.refreshToken);
 authRouter.post('/logout', authController.logout);

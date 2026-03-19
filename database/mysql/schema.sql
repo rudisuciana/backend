@@ -13,6 +13,12 @@ CREATE TABLE IF NOT EXISTS users (
   email_verified_at TIMESTAMP NULL DEFAULT NULL,
   refresh_token_hash VARCHAR(255) NULL,
   refresh_token_expired TIMESTAMP NULL DEFAULT NULL,
+  multilogin TINYINT(1) NOT NULL DEFAULT 1,
+  failed_login_attempts INT NOT NULL DEFAULT 0,
+  locked_until TIMESTAMP NULL DEFAULT NULL,
+  mfa_enabled TINYINT(1) NOT NULL DEFAULT 0,
+  mfa_otp_hash VARCHAR(255) NULL,
+  mfa_otp_expired TIMESTAMP NULL DEFAULT NULL,
   balance DECIMAL(18,2) NOT NULL DEFAULT 0,
   status ENUM('active', 'inactive', 'blocked') NOT NULL DEFAULT 'active',
   avatar VARCHAR(500) NULL,
@@ -20,6 +26,10 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+-- Catatan kebijakan lockout:
+-- akun dikunci selama 15 menit setelah 5 kali gagal login berturut-turut
+-- (diimplementasikan di layer repository/auth service).
 
 CREATE TABLE IF NOT EXISTS products (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
@@ -69,4 +79,31 @@ CREATE TABLE IF NOT EXISTS settings (
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_sessions (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED NOT NULL,
+  refresh_token_hash VARCHAR(255) NOT NULL,
+  refresh_token_expired TIMESTAMP NOT NULL,
+  user_agent VARCHAR(255) NULL,
+  ip_address VARCHAR(64) NULL,
+  revoked_at TIMESTAMP NULL DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_user_sessions_user FOREIGN KEY (user_id) REFERENCES users(id),
+  INDEX idx_user_sessions_user_active (user_id, revoked_at, refresh_token_expired)
+);
+
+CREATE TABLE IF NOT EXISTS auth_security_logs (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED NULL,
+  event VARCHAR(80) NOT NULL,
+  ip_address VARCHAR(64) NULL,
+  user_agent VARCHAR(255) NULL,
+  metadata TEXT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_auth_security_logs_user (user_id),
+  INDEX idx_auth_security_logs_event (event),
+  CONSTRAINT fk_auth_security_logs_user FOREIGN KEY (user_id) REFERENCES users(id)
 );

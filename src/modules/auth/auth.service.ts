@@ -18,6 +18,7 @@ interface RegisterInput {
 interface LoginInput {
   identity: string;
   password: string;
+  singleSession?: boolean;
 }
 
 interface VerifyOtpInput {
@@ -39,6 +40,8 @@ interface GoogleAuthInput {
   idToken: string;
   phone?: string;
 }
+
+type TokenType = 'access' | 'refresh';
 
 const parseDurationToSeconds = (value: string): number => {
   const raw = value.trim().toLowerCase();
@@ -132,14 +135,68 @@ export class AuthService {
       throw new Error('INVALID_CREDENTIALS');
     }
 
+    const lockedUntil = user.lockedUntil ? new Date(user.lockedUntil).getTime() : Number.NaN;
+    if (Number.isFinite(lockedUntil) && lockedUntil > Date.now()) {
+      logger.warn({ userId: user.id }, 'Security event: login blocked due to account lockout');
+      await this.authRepository.createSecurityLog(user.id, 'login_locked');
+      throw new Error('ACCOUNT_LOCKED');
+    }
+
     const isMatch = await bcrypt.compare(input.password, user.passwordHash);
     if (!isMatch) {
+      await this.authRepository.incrementFailedLoginAttempts(user.id);
+      logger.warn({ userId: user.id }, 'Security event: failed login attempt');
+      await this.authRepository.createSecurityLog(user.id, 'login_failed');
       throw new Error('INVALID_CREDENTIALS');
     }
+
+    await this.authRepository.clearFailedLoginAttempts(user.id);
 
     if (!user.emailVerifiedAt) {
       throw new Error('EMAIL_NOT_VERIFIED');
     }
+
+    if (user.mfaEnabled) {
+      const otp = this.generateOtp();
+      const otpHash = await bcrypt.hash(otp, 10);
+      const expiredAt = this.getOtpExpiredAtIso();
+      await this.authRepository.storeMfaOtp(user.id, otpHash, expiredAt);
+      await this.sendOtpEmail(user.email, otp, 'OTP MFA Login');
+      logger.info({ userId: user.id }, 'Security event: MFA challenge issued');
+      await this.authRepository.createSecurityLog(user.id, 'mfa_challenge_issued');
+      throw new Error('MFA_REQUIRED');
+    }
+
+    if (input.singleSession === true || user.multilogin === false) {
+      await this.authRepository.clearRefreshSessions(user.id);
+      await this.authRepository.createSecurityLog(user.id, 'session_single_enforced');
+    }
+
+    return this.issueAndStoreTokens(user);
+  }
+
+  async verifyMfaLogin(input: VerifyOtpInput): Promise<AuthTokens> {
+    const user = await this.authRepository.getUserByEmail(input.email);
+    if (!user || !user.mfaEnabled || !user.mfaOtpHash || !user.mfaOtpExpired) {
+      throw new Error('INVALID_OTP');
+    }
+
+    const otpExpiredAt = new Date(user.mfaOtpExpired).getTime();
+    if (!Number.isFinite(otpExpiredAt) || otpExpiredAt <= Date.now()) {
+      await this.authRepository.clearMfaOtp(user.id);
+      throw new Error('INVALID_OTP');
+    }
+
+    const isMatch = await bcrypt.compare(input.otp, user.mfaOtpHash);
+    if (!isMatch) {
+      throw new Error('INVALID_OTP');
+    }
+
+    await this.authRepository.clearMfaOtp(user.id);
+    if (!user.multilogin) {
+      await this.authRepository.clearRefreshSessions(user.id);
+    }
+    await this.authRepository.createSecurityLog(user.id, 'mfa_verified');
 
     return this.issueAndStoreTokens(user);
   }
@@ -147,7 +204,7 @@ export class AuthService {
   async refreshToken(refreshToken: string): Promise<AuthTokens> {
     let payload: jwt.JwtPayload;
     try {
-      payload = jwt.verify(refreshToken, env.auth.refreshTokenSecret) as jwt.JwtPayload;
+      payload = jwt.verify(refreshToken, this.resolveSecretForToken(refreshToken, 'refresh')) as jwt.JwtPayload;
     } catch {
       throw new Error('INVALID_REFRESH_TOKEN');
     }
@@ -172,6 +229,8 @@ export class AuthService {
     const isTokenMatch = await bcrypt.compare(refreshToken, user.refreshTokenHash);
     if (!isTokenMatch) {
       await this.authRepository.setRefreshTokenHash(user.id, null, null);
+      logger.warn({ userId: user.id }, 'Security event: refresh token reuse detected');
+      await this.authRepository.createSecurityLog(user.id, 'refresh_reuse_detected');
       throw new Error('REFRESH_TOKEN_REUSE_DETECTED');
     }
 
@@ -181,7 +240,7 @@ export class AuthService {
   async logout(refreshToken: string): Promise<void> {
     let payload: jwt.JwtPayload;
     try {
-      payload = jwt.verify(refreshToken, env.auth.refreshTokenSecret) as jwt.JwtPayload;
+      payload = jwt.verify(refreshToken, this.resolveSecretForToken(refreshToken, 'refresh')) as jwt.JwtPayload;
     } catch {
       throw new Error('INVALID_REFRESH_TOKEN');
     }
@@ -202,6 +261,8 @@ export class AuthService {
     }
 
     await this.authRepository.setRefreshTokenHash(user.id, null, null);
+    await this.authRepository.revokeActiveSessions(user.id);
+    await this.authRepository.createSecurityLog(user.id, 'logout');
   }
 
   async forgotPassword(input: ForgotPasswordInput): Promise<void> {
@@ -288,7 +349,8 @@ export class AuthService {
 
     const refreshToken = jwt.sign({}, env.auth.refreshTokenSecret, {
       subject: String(user.id),
-      expiresIn: env.auth.refreshTokenExpiresIn as jwt.SignOptions['expiresIn']
+      expiresIn: env.auth.refreshTokenExpiresIn as jwt.SignOptions['expiresIn'],
+      keyid: env.auth.refreshTokenKid
     });
 
     const refreshHash = await bcrypt.hash(refreshToken, 10);
@@ -297,6 +359,7 @@ export class AuthService {
       ? new Date(refreshPayload.exp * 1000).toISOString()
       : null;
     await this.authRepository.setRefreshTokenHash(user.id, refreshHash, refreshTokenExpired);
+    await this.authRepository.createSession(user.id, refreshHash, refreshTokenExpired);
 
     return { accessToken, refreshToken };
   }
@@ -307,7 +370,8 @@ export class AuthService {
       env.auth.accessTokenSecret,
       {
         subject: String(user.id),
-        expiresIn: env.auth.accessTokenExpiresIn as jwt.SignOptions['expiresIn']
+        expiresIn: env.auth.accessTokenExpiresIn as jwt.SignOptions['expiresIn'],
+        keyid: env.auth.accessTokenKid
       }
     );
 
@@ -321,6 +385,10 @@ export class AuthService {
 
   private generateOtp(): string {
     return String(randomInt(0, 1000000)).padStart(6, '0');
+  }
+
+  private getOtpExpiredAtIso(): string {
+    return new Date(Date.now() + env.auth.otpTtlSeconds * 1000).toISOString();
   }
 
   private registrationOtpKey(email: string): string {
@@ -410,5 +478,23 @@ export class AuthService {
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/, '');
+  }
+
+  private resolveSecretForToken(token: string, tokenType: TokenType): string {
+    const decoded = jwt.decode(token, { complete: true });
+    if (!decoded || typeof decoded !== 'object') {
+      return tokenType === 'access' ? env.auth.accessTokenSecret : env.auth.refreshTokenSecret;
+    }
+
+    const kid = (decoded.header as jwt.JwtHeader | undefined)?.kid;
+    if (!kid) {
+      return tokenType === 'access' ? env.auth.accessTokenSecret : env.auth.refreshTokenSecret;
+    }
+
+    if (tokenType === 'access') {
+      return env.auth.accessTokenSecrets[kid] ?? env.auth.accessTokenSecret;
+    }
+
+    return env.auth.refreshTokenSecrets[kid] ?? env.auth.refreshTokenSecret;
   }
 }

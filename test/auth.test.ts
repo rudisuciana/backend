@@ -47,6 +47,16 @@ describe('Auth API validation', () => {
     expect(response.body.success).toBe(false);
   });
 
+  it('should validate verify-mfa payload', async () => {
+    const response = await request(app).post('/api/auth/verify-mfa').send({
+      email: 'invalid',
+      otp: '12'
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+  });
+
   it('should validate forgot-password payload', async () => {
     const response = await request(app).post('/api/auth/forgot-password').send({
       email: 'invalid'
