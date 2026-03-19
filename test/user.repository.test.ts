@@ -21,7 +21,6 @@ describe('UserRepository', () => {
 
     expect(query).toHaveBeenCalledOnce();
     expect(profile).toEqual({
-      id: 1,
       name: 'Demo User',
       email: 'demo@example.com',
       balance: 500000,
@@ -59,7 +58,6 @@ describe('UserRepository', () => {
 
     expect(query).toHaveBeenCalledOnce();
     expect(profile).toEqual({
-      id: 2,
       name: 'Second User',
       email: 'second@example.com',
       balance: 250000,

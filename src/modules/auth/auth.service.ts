@@ -297,11 +297,11 @@ export class AuthService {
     }
 
     return {
-      id: user.id,
       username: user.username,
       name: user.name,
       email: user.email,
       phone: user.phone,
+      balance: user.balance,
       status: user.status,
       avatar: user.avatar,
       emailVerifiedAt: user.emailVerifiedAt,

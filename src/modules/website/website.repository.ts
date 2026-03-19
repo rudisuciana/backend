@@ -2,7 +2,6 @@ import type { Pool, RowDataPacket } from 'mysql2/promise';
 import type Redis from 'ioredis';
 
 export interface PPOBProduct {
-  id: number;
   code: string;
   name: string;
   category: string;
@@ -43,7 +42,6 @@ export class WebsiteRepository {
     );
 
     const products = rows.map((row) => ({
-      id: row.id,
       code: row.code,
       name: row.name,
       category: row.category,

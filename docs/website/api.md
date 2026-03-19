@@ -50,7 +50,6 @@ curl --location 'http://localhost:3000/api/website/products' \
   "success": true,
   "data": [
     {
-      "id": 1,
       "code": "PLN20",
       "name": "Token PLN 20.000",
       "category": "electricity",

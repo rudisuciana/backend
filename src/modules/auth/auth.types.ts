@@ -6,6 +6,7 @@ export interface AuthUser {
   phone: string;
   apikey: string;
   avatar: string | null;
+  balance: number;
   passwordHash: string | null;
   googleId: string | null;
   emailVerifiedAt: string | null;
@@ -31,11 +32,11 @@ export interface AuthPolicy {
 }
 
 export interface AuthMe {
-  id: number;
   username: string;
   name: string;
   email: string;
   phone: string;
+  balance: number;
   status: string;
   avatar: string | null;
   emailVerifiedAt: string | null;

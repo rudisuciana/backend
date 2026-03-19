@@ -48,7 +48,6 @@ curl --location 'http://localhost:3000/api/user/profile' \
 {
   "success": true,
   "data": {
-    "id": 1,
     "name": "Demo User",
     "email": "demo@example.com",
     "balance": 500000,

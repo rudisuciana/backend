@@ -1,7 +1,6 @@
 import type { Pool, RowDataPacket } from 'mysql2/promise';
 
 export interface UserProfile {
-  id: number;
   name: string;
   email: string;
   balance: number;
@@ -41,7 +40,6 @@ export class UserRepository {
 
     const row = rows[0];
     return {
-      id: row.id,
       name: row.name,
       email: row.email,
       balance: Number(row.balance),
@@ -83,7 +81,6 @@ export class UserRepository {
 
     const row = rows[0];
     return {
-      id: row.id,
       name: row.name,
       email: row.email,
       balance: Number(row.balance),

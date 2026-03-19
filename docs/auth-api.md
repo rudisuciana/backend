@@ -267,11 +267,11 @@ Header:
 {
   "success": true,
   "data": {
-    "id": 1,
     "username": "demouser",
     "name": "demouser",
     "email": "demouser@gmail.com",
     "phone": "081234567890",
+    "balance": 500000,
     "status": "active",
     "avatar": null,
     "emailVerifiedAt": "2026-03-19T10:00:00.000Z",
@@ -322,7 +322,6 @@ Header:
   "success": true,
   "data": [
     {
-      "id": 1,
       "refreshTokenExpired": "2026-03-26T10:00:00.000Z",
       "userAgent": "Mozilla/5.0 ...",
       "ipAddress": "127.0.0.1",
@@ -363,7 +362,6 @@ Contoh: `/api/auth/security-logs?limit=10`
   "success": true,
   "data": [
     {
-      "id": 12,
       "event": "login_failed",
       "ipAddress": null,
       "userAgent": null,
