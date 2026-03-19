@@ -1,0 +1,97 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { getKajeProducts } from '../src/modules/providers/kaje/products';
+
+const originalEnv = { ...process.env };
+
+describe('Kaje products mapper', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    process.env = { ...originalEnv };
+  });
+
+  it('should map only requested fields and set version 2', async () => {
+    process.env.KAJE_URL = 'https://example.com';
+    process.env.KAJE_API = 'secret-key';
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          info: 'ignored',
+          products: [
+            {
+              code: 'KDA8',
+              name: 'Akrab 13-30GB',
+              category: 'Akrab Anggota',
+              type: 'Paket Data',
+              stock: 0,
+              price: 42000,
+              description: ['line1', 'line2']
+            },
+            {
+              code: 'TPENDING',
+              name: 'Trial Produk Pending',
+              category: 'Uji Coba',
+              stock: 1,
+              price: 0,
+              description: []
+            }
+          ]
+        }
+      })
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await getKajeProducts();
+
+    expect(fetchMock).toHaveBeenCalledWith('https://example.com/service/list-product', {
+      method: 'POST',
+      headers: {
+        'x-api-key': 'secret-key'
+      }
+    });
+    expect(result).toEqual([
+      {
+        code: 'KDA8',
+        name: 'Akrab 13-30GB',
+        price: 42000,
+        stock: 0,
+        category: 'Akrab Anggota',
+        description: ['line1', 'line2'],
+        version: 2
+      },
+      {
+        code: 'TPENDING',
+        name: 'Trial Produk Pending',
+        price: 0,
+        stock: 1,
+        category: 'Uji Coba',
+        description: [],
+        version: 2
+      }
+    ]);
+  });
+
+  it('should throw when required env is missing', async () => {
+    delete process.env.KAJE_URL;
+    process.env.KAJE_API = 'secret-key';
+
+    await expect(getKajeProducts()).rejects.toThrow('KAJE_URL_IS_REQUIRED');
+  });
+
+  it('should throw when kaje request fails', async () => {
+    process.env.KAJE_URL = 'https://example.com/';
+    process.env.KAJE_API = 'secret-key';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401
+      })
+    );
+
+    await expect(getKajeProducts()).rejects.toThrow('KAJE_REQUEST_FAILED:401');
+  });
+});
