@@ -59,7 +59,6 @@ test/
 - Akses browser dari frontend (cross-origin) hanya dibuka saat `NODE_ENV=production`.
 - Gunakan `CORS_ORIGIN` sebagai origin frontend yang diizinkan pada mode production.
 - Di environment `production`, nilai berikut wajib minimal 32 karakter:
-  - `USER_API_KEY`
   - `ACCESS_TOKEN_SECRET`
   - `REFRESH_TOKEN_SECRET`
 - Server membatasi ukuran body request JSON/form hingga `10kb` untuk mengurangi risiko abuse payload besar.

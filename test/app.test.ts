@@ -2,7 +2,6 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
 process.env.NODE_ENV = 'test';
-process.env.USER_API_KEY = 'user-secret-key';
 process.env.CORS_ORIGIN = 'http://localhost:3000';
 
 import { createApp } from '../src/app';

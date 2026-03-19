@@ -1,13 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
-import { env } from '../config/env';
 import { getMySQLPool } from '../infrastructure/mysql';
 import { UserRepository, type UserApiKeyAccess } from '../modules/user/user.repository';
 
 export type ApiClientType = 'user';
-
-const keyByClient: Record<ApiClientType, string> = {
-  user: env.userApiKey
-};
 
 const defaultUserRepository = new UserRepository(getMySQLPool());
 
@@ -37,14 +32,6 @@ export const requireApiKey = (clientType: ApiClientType, deps?: RequireApiKeyDep
       res.status(401).json({
         success: false,
         message: 'x-api-key header is required'
-      });
-      return;
-    }
-
-    if (apiKey !== keyByClient[clientType]) {
-      res.status(403).json({
-        success: false,
-        message: 'Invalid API key'
       });
       return;
     }
