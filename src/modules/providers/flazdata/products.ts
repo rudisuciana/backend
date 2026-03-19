@@ -3,8 +3,6 @@ interface FlazdataProductApiResponseItem {
   name?: unknown;
   price?: unknown;
   stock?: unknown;
-  fee?: unknown;
-  feee?: unknown;
   description?: unknown;
 }
 
