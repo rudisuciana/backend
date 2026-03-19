@@ -67,7 +67,7 @@ test/
 ## Endpoint Utama
 - `GET /health`
 - `GET /api/v1/website/ping`
-- `GET /api/v1/website/products`
+- `GET /api/v1/website/products` (Bearer access token)
 - `GET /api/v1/user/ping`
 - `GET /api/v1/user/profile`
 - `POST /api/v1/auth/register`
@@ -85,6 +85,7 @@ test/
 - User API: `docs/user-api.md`
 
 Catatan: User API digunakan oleh user untuk mengambil informasi akun dan dipersiapkan untuk endpoint transaksi pada pengembangan berikutnya.
+Selain itu, access token hasil login/refresh disimpan sementara di Redis sesuai TTL token, dan endpoint website products membutuhkan header `Authorization: Bearer <access_token>`.
 
 ## Database
 - Jalankan SQL schema: `database/mysql/schema.sql`

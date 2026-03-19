@@ -6,7 +6,11 @@ Dokumentasi ini khusus untuk endpoint channel **Website**.
 - Local: `http://localhost:3000`
 
 ## Autentikasi
-Endpoint website **tidak memerlukan** header `x-api-key`.
+- `GET /api/v1/website/ping` bersifat public.
+- `GET /api/v1/website/products` membutuhkan login user terlebih dahulu.
+- Gunakan header:
+  - `Authorization: Bearer YOUR_ACCESS_TOKEN`
+  - Access token didapat dari endpoint login (`/api/v1/auth/login` atau Google login) dan disimpan sementara di Redis.
 
 ## Endpoint
 
@@ -28,12 +32,13 @@ curl --location 'http://localhost:3000/api/v1/website/ping' \
 ```
 
 ### 2) GET `/api/v1/website/products`
-Mengambil daftar produk PPOB aktif.
+Mengambil daftar produk PPOB aktif (hanya untuk user yang sudah login).
 
 **Contoh Request**
 ```bash
 curl --location 'http://localhost:3000/api/v1/website/products' \
-  --header 'Content-Type: application/json'
+  --header 'Content-Type: application/json' \
+  --header 'Authorization: Bearer YOUR_ACCESS_TOKEN'
 ```
 
 **Response 200**
@@ -55,4 +60,8 @@ curl --location 'http://localhost:3000/api/v1/website/products' \
 ```
 
 ## Error Umum
-Untuk endpoint website, error `401/403` terkait `x-api-key` tidak berlaku karena endpoint ini bersifat public.
+- Endpoint website tidak memakai `x-api-key`.
+- Endpoint `/api/v1/website/products` dapat mengembalikan `401` jika:
+  - header Authorization tidak ada
+  - format bukan Bearer token
+  - access token tidak valid / tidak ditemukan di Redis

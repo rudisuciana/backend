@@ -2,11 +2,15 @@ openapi: 3.0.3
 info:
   title: PPOB Backend Blueprint API
   version: 1.0.0
-  description: API blueprint for website (public) and user channels (x-api-key authorization based on users.apikey and whitelisted IP).
+  description: API blueprint for website and user channels with Bearer access token (website products) and x-api-key authorization (user routes).
 servers:
   - url: http://localhost:3000
 components:
   securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
     ApiKeyAuth:
       type: apiKey
       in: header
@@ -65,14 +69,16 @@ paths:
   /api/v1/website/ping:
     get:
       tags: [Website]
-      summary: Basic connectivity test for website client
+      summary: Basic connectivity test for website client (public)
       responses:
         '200':
           description: Website API reachable
   /api/v1/website/products:
     get:
       tags: [Website]
-      summary: List active PPOB products
+      security:
+        - BearerAuth: []
+      summary: List active PPOB products (requires login bearer access token)
       responses:
         '200':
           description: Product list
@@ -87,6 +93,8 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/WebsiteProduct'
+        '401':
+          description: Missing or invalid bearer access token
   /api/v1/user/ping:
     get:
       tags: [User]
@@ -141,7 +149,7 @@ paths:
   /api/v1/auth/login:
     post:
       tags: [Auth]
-      summary: Login using email or username and password
+      summary: Login using email or username and password (issues access and refresh token; access token is cached in Redis)
       responses:
         '200':
           description: Login successful
@@ -159,7 +167,7 @@ paths:
   /api/v1/auth/refresh-token:
     post:
       tags: [Auth]
-      summary: Refresh access token using refresh token
+      summary: Refresh access token using refresh token (new access token cached in Redis)
       responses:
         '200':
           description: Token refreshed

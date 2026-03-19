@@ -40,6 +40,28 @@ interface GoogleAuthInput {
   phone?: string;
 }
 
+const parseDurationToSeconds = (value: string): number => {
+  const raw = value.trim().toLowerCase();
+  if (!raw) {
+    return 0;
+  }
+
+  const asNumber = Number(raw);
+  if (Number.isFinite(asNumber)) {
+    return Math.max(0, Math.floor(asNumber));
+  }
+
+  const match = raw.match(/^(\d+)([smhd])$/);
+  if (!match) {
+    return 0;
+  }
+
+  const amount = Number(match[1]);
+  const unit = match[2];
+  const multiplier = unit === 's' ? 1 : unit === 'm' ? 60 : unit === 'h' ? 3600 : 86400;
+  return amount * multiplier;
+};
+
 const isAllowedGmail = (email: string): boolean => email.toLowerCase().endsWith('@gmail.com');
 
 export class AuthService {
@@ -227,8 +249,9 @@ export class AuthService {
   }
 
   private async issueAndStoreTokens(user: AuthUser): Promise<AuthTokens> {
+    const tokenId = randomUUID();
     const accessToken = jwt.sign(
-      { email: user.email, username: user.username },
+      { email: user.email, username: user.username, jti: tokenId },
       env.auth.accessTokenSecret,
       {
         subject: String(user.id),
@@ -243,6 +266,10 @@ export class AuthService {
 
     const refreshHash = await bcrypt.hash(refreshToken, 10);
     await this.authRepository.setRefreshTokenHash(user.id, refreshHash);
+    const accessTtlSeconds = parseDurationToSeconds(env.auth.accessTokenExpiresIn);
+    if (accessTtlSeconds > 0) {
+      await this.redisClient.set(`auth:access:${user.id}:${tokenId}`, accessToken, 'EX', accessTtlSeconds);
+    }
 
     return { accessToken, refreshToken };
   }

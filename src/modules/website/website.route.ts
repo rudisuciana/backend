@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireAccessToken } from '../../middlewares/accessToken.middleware';
 import { getMySQLPool } from '../../infrastructure/mysql';
 import { getRedisClient } from '../../infrastructure/redis';
 import { WebsiteController } from './website.controller';
@@ -12,6 +13,6 @@ const websiteService = new WebsiteService(websiteRepository);
 const websiteController = new WebsiteController(websiteService);
 
 websiteRouter.get('/ping', websiteController.ping);
-websiteRouter.get('/products', websiteController.getProducts);
+websiteRouter.get('/products', requireAccessToken(), websiteController.getProducts);
 
 export { websiteRouter };

@@ -31,6 +31,13 @@ describe('PPOB backend blueprint', () => {
     expect(response.headers['access-control-allow-origin']).toBeUndefined();
   });
 
+  it('should reject website products route without bearer access token', async () => {
+    const response = await request(app).get('/api/v1/website/products');
+
+    expect(response.status).toBe(401);
+    expect(response.body.success).toBe(false);
+  });
+
   it('should reject oversized JSON payload', async () => {
     const response = await request(app).post('/api/v1/auth/register').send({
       email: `a${'a'.repeat(12000)}@example.com`,

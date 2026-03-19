@@ -51,4 +51,35 @@ describe('AuthService Gmail restriction', () => {
     expect(authRepository.getUserByEmail).not.toHaveBeenCalled();
     expect(authRepository.createUser).not.toHaveBeenCalled();
   });
+
+  it('should store issued access token in redis with ttl', async () => {
+    const authRepository = {
+      setRefreshTokenHash: vi.fn()
+    };
+    const redisClient = {
+      set: vi.fn()
+    };
+    const authService = new AuthService(authRepository as never, redisClient as never);
+    const tokens = await Reflect.get(authService as object, 'issueAndStoreTokens').call(authService, {
+      id: 9,
+      username: 'tester',
+      name: 'Tester',
+      email: 'tester@gmail.com',
+      phone: '0811111111',
+      apikey: 'apikey',
+      passwordHash: 'hash',
+      googleId: null,
+      emailVerifiedAt: new Date().toISOString(),
+      refreshTokenHash: null,
+      status: 'active'
+    });
+
+    expect(tokens.accessToken).toBeTypeOf('string');
+    expect(tokens.refreshToken).toBeTypeOf('string');
+    expect(authRepository.setRefreshTokenHash).toHaveBeenCalledOnce();
+    expect(redisClient.set).toHaveBeenCalledOnce();
+    expect(redisClient.set.mock.calls[0][0]).toMatch(/^auth:access:9:/);
+    expect(redisClient.set.mock.calls[0][2]).toBe('EX');
+    expect(redisClient.set.mock.calls[0][3]).toBeGreaterThan(0);
+  });
 });
