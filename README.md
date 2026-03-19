@@ -85,11 +85,13 @@ test/
 - Website API: `docs/website-api.md`
 - User API: `docs/user-api.md`
 
+Catatan: User API digunakan oleh user untuk mengambil informasi akun dan dipersiapkan untuk endpoint transaksi pada pengembangan berikutnya.
+
 ## Database
 - Jalankan SQL schema: `database/mysql/schema.sql`
 - Jalankan SQL seed: `database/mysql/seed.sql`
 - Tabel utama blueprint:
-  - `users` (dengan kolom `apikey`)
+  - `users` (dengan kolom `apikey` dan `avatar`)
   - `products`
   - `histories` (mencakup data transaksi + riwayat aksi)
   - `deposits`

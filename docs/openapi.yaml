@@ -42,6 +42,9 @@ components:
           type: number
         status:
           type: string
+        avatar:
+          type: string
+          nullable: true
     AuthTokens:
       type: object
       properties:
@@ -102,7 +105,7 @@ paths:
       tags: [User]
       security:
         - ApiKeyAuth: []
-      summary: Get user profile by userId
+      summary: Get user account info by userId (for information and transaction preparation)
       parameters:
         - name: userId
           in: query

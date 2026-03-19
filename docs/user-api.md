@@ -1,6 +1,7 @@
 # Dokumentasi User API
 
 Dokumentasi ini khusus untuk endpoint channel **User**.
+Channel ini dipakai user untuk mengambil informasi akun, dan akan dipakai juga untuk fitur transaksi berikutnya.
 
 ## Base URL
 - Local: `http://localhost:3000`
@@ -30,7 +31,7 @@ curl --location 'http://localhost:3000/api/v1/user/ping' \
 ```
 
 ### 2) GET `/api/v1/user/profile?userId=1`
-Mengambil profil user berdasarkan ID.
+Mengambil informasi akun user berdasarkan ID (siap dipakai sebagai data awal transaksi).
 
 **Contoh Request**
 ```bash
@@ -47,7 +48,8 @@ curl --location 'http://localhost:3000/api/v1/user/profile?userId=1' \
     "name": "Demo User",
     "email": "demo@example.com",
     "balance": 500000,
-    "status": "active"
+    "status": "active",
+    "avatar": "https://example.com/avatars/demo-user.png"
   }
 }
 ```

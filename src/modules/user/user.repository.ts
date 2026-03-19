@@ -6,6 +6,7 @@ export interface UserProfile {
   email: string;
   balance: number;
   status: string;
+  avatar: string | null;
 }
 
 interface UserRow extends RowDataPacket {
@@ -14,6 +15,7 @@ interface UserRow extends RowDataPacket {
   email: string;
   balance: number;
   status: string;
+  avatar: string | null;
 }
 
 export class UserRepository {
@@ -21,7 +23,7 @@ export class UserRepository {
 
   async getProfileById(id: number): Promise<UserProfile | null> {
     const [rows] = await this.mysqlPool.query<UserRow[]>(
-      `SELECT id, name, email, balance, status
+      `SELECT id, name, email, balance, status, avatar
        FROM users
        WHERE id = ?
        LIMIT 1`,
@@ -38,7 +40,8 @@ export class UserRepository {
       name: row.name,
       email: row.email,
       balance: Number(row.balance),
-      status: row.status
+      status: row.status,
+      avatar: row.avatar
     };
   }
 }

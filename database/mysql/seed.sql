@@ -1,8 +1,8 @@
 USE ppob_blueprint;
 
-INSERT INTO users (username, name, email, phone, apikey, password_hash, email_verified_at, balance, status)
+INSERT INTO users (username, name, email, phone, apikey, password_hash, email_verified_at, balance, status, avatar)
 VALUES
-  ('demo', 'Demo User', 'demo@example.com', '081234567890', 'user-secret-key', '$2b$10$A9Gjlxrmymlh94jyycogKuEMZAgDiv5jnUARwpqoaIXlCl1n.Cqku', CURRENT_TIMESTAMP, 500000, 'active')
+  ('demo', 'Demo User', 'demo@example.com', '081234567890', 'user-secret-key', '$2b$10$A9Gjlxrmymlh94jyycogKuEMZAgDiv5jnUARwpqoaIXlCl1n.Cqku', CURRENT_TIMESTAMP, 500000, 'active', 'https://example.com/avatars/demo-user.png')
 ON DUPLICATE KEY UPDATE
   username = VALUES(username),
   name = VALUES(name),
@@ -11,7 +11,8 @@ ON DUPLICATE KEY UPDATE
   password_hash = VALUES(password_hash),
   email_verified_at = VALUES(email_verified_at),
   balance = VALUES(balance),
-  status = VALUES(status);
+  status = VALUES(status),
+  avatar = VALUES(avatar);
 
 INSERT INTO products (code, name, category, price, admin_fee, is_active)
 VALUES
