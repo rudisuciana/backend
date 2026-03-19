@@ -28,6 +28,7 @@ src/
 docs/
   openapi.yaml
   website-api.md
+  auth-api.md
   user-api.md
 database/mysql/
   schema.sql
@@ -82,6 +83,7 @@ test/
 
 ## Dokumentasi Terpisah (.md)
 - Website API: `docs/website-api.md`
+- Auth API: `docs/auth-api.md`
 - User API: `docs/user-api.md`
 
 Catatan: User API digunakan oleh user untuk mengambil informasi akun dan dipersiapkan untuk endpoint transaksi pada pengembangan berikutnya.
