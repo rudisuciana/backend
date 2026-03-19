@@ -9,12 +9,12 @@ const userQuerySchema = z.object({
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  ping(_req: Request, res: Response): void {
+  ping = (_req: Request, res: Response): void => {
     res.json({
       success: true,
       message: 'User API reachable'
     });
-  }
+  };
 
   getProfile = async (req: Request, res: Response): Promise<void> => {
     const parseResult = userQuerySchema.safeParse(req.query);

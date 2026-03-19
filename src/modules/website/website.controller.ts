@@ -4,12 +4,12 @@ import { WebsiteService } from './website.service';
 export class WebsiteController {
   constructor(private readonly websiteService: WebsiteService) {}
 
-  ping(_req: Request, res: Response): void {
+  ping = (_req: Request, res: Response): void => {
     res.json({
       success: true,
       message: 'Website API reachable'
     });
-  }
+  };
 
   getProducts = async (_req: Request, res: Response): Promise<void> => {
     const products = await this.websiteService.getProducts();
