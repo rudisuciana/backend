@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../src/modules/auth/auth.service';
 
@@ -81,5 +82,39 @@ describe('AuthService Gmail restriction', () => {
     expect(redisClient.set.mock.calls[0][0]).toMatch(/^auth:access:9:/);
     expect(redisClient.set.mock.calls[0][2]).toBe('EX');
     expect(redisClient.set.mock.calls[0][3]).toBeGreaterThan(0);
+  });
+
+  it('should issue access token 15m and refresh token 7d by default', async () => {
+    const authRepository = {
+      setRefreshTokenHash: vi.fn()
+    };
+    const redisClient = {
+      set: vi.fn()
+    };
+    const authService = new AuthService(authRepository as never, redisClient as never);
+    const tokens = await Reflect.get(authService as object, 'issueAndStoreTokens').call(authService, {
+      id: 10,
+      username: 'tester2',
+      name: 'Tester 2',
+      email: 'tester2@gmail.com',
+      phone: '0822222222',
+      apikey: 'apikey2',
+      passwordHash: 'hash',
+      googleId: null,
+      emailVerifiedAt: new Date().toISOString(),
+      refreshTokenHash: null,
+      status: 'active'
+    });
+
+    const accessPayload = jwt.decode(tokens.accessToken) as jwt.JwtPayload;
+    const refreshPayload = jwt.decode(tokens.refreshToken) as jwt.JwtPayload;
+
+    expect(accessPayload.exp).toBeDefined();
+    expect(accessPayload.iat).toBeDefined();
+    expect(refreshPayload.exp).toBeDefined();
+    expect(refreshPayload.iat).toBeDefined();
+
+    expect(accessPayload.exp! - accessPayload.iat!).toBe(15 * 60);
+    expect(refreshPayload.exp! - refreshPayload.iat!).toBe(7 * 24 * 60 * 60);
   });
 });
