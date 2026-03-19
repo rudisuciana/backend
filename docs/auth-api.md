@@ -1,7 +1,7 @@
 # Dokumentasi Auth API
 
 Dokumentasi ini khusus untuk endpoint channel **Auth**.
-Channel ini dipakai untuk registrasi, login, verifikasi OTP, refresh token, dan reset password.
+Channel ini dipakai untuk registrasi, login, verifikasi OTP, refresh token, reset password, serta operasional governance (kebijakan auth, manajemen sesi, dan audit log keamanan).
 
 ## Base URL
 - Local: `http://localhost:3000`
