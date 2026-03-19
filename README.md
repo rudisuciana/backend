@@ -58,6 +58,7 @@ test/
 ## Security Configuration
 - Akses browser dari frontend (cross-origin) hanya dibuka saat `NODE_ENV=production`.
 - Gunakan `CORS_ORIGIN` sebagai origin frontend yang diizinkan pada mode production.
+- User API memakai `x-api-key` dari kolom `users.apikey` (bukan `USER_API_KEY` global di `.env`).
 - Di environment `production`, nilai berikut wajib minimal 32 karakter:
   - `ACCESS_TOKEN_SECRET`
   - `REFRESH_TOKEN_SECRET`

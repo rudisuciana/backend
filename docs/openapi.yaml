@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: PPOB Backend Blueprint API
   version: 1.0.0
-  description: API blueprint for website (public) and user channels (x-api-key authorization).
+  description: API blueprint for website (public) and user channels (x-api-key authorization based on users.apikey and whitelisted IP).
 servers:
   - url: http://localhost:3000
 components:
