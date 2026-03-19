@@ -16,7 +16,7 @@ Channel ini dipakai untuk registrasi, login, verifikasi OTP, refresh token, dan 
 
 ## Endpoint
 
-### 1) POST `/api/v1/auth/register`
+### 1) POST `/api/auth/register`
 Registrasi manual user (khusus email domain Gmail), lalu kirim OTP ke email.
 
 **Body Request**
@@ -41,7 +41,7 @@ Registrasi manual user (khusus email domain Gmail), lalu kirim OTP ke email.
 }
 ```
 
-### 2) POST `/api/v1/auth/verify-otp`
+### 2) POST `/api/auth/verify-otp`
 Verifikasi OTP hasil registrasi manual.
 
 **Body Request**
@@ -60,7 +60,7 @@ Verifikasi OTP hasil registrasi manual.
 }
 ```
 
-### 3) POST `/api/v1/auth/login`
+### 3) POST `/api/auth/login`
 Login menggunakan `email` atau `username` + `password`.
 
 **Body Request**
@@ -82,7 +82,7 @@ Login menggunakan `email` atau `username` + `password`.
 }
 ```
 
-### 4) POST `/api/v1/auth/refresh-token`
+### 4) POST `/api/auth/refresh-token`
 Membuat access token baru menggunakan refresh token.
 
 **Body Request**
@@ -103,7 +103,7 @@ Membuat access token baru menggunakan refresh token.
 }
 ```
 
-### 5) POST `/api/v1/auth/forgot-password`
+### 5) POST `/api/auth/forgot-password`
 Kirim OTP reset password ke email user (jika email terdaftar).
 
 **Body Request**
@@ -121,7 +121,7 @@ Kirim OTP reset password ke email user (jika email terdaftar).
 }
 ```
 
-### 6) POST `/api/v1/auth/reset-password`
+### 6) POST `/api/auth/reset-password`
 Reset password menggunakan OTP email.
 
 **Body Request**
@@ -141,7 +141,7 @@ Reset password menggunakan OTP email.
 }
 ```
 
-### 7) POST `/api/v1/auth/google/register`
+### 7) POST `/api/auth/google/register`
 Registrasi menggunakan Google ID token (akun Gmail).
 
 **Body Request**
@@ -163,7 +163,7 @@ Registrasi menggunakan Google ID token (akun Gmail).
 }
 ```
 
-### 8) POST `/api/v1/auth/google/login`
+### 8) POST `/api/auth/google/login`
 Login menggunakan Google ID token.
 
 **Body Request**

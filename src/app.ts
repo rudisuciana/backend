@@ -66,7 +66,7 @@ export const createApp = () => {
     });
   });
 
-  app.use('/api/v1', apiRouter);
+  app.use('/api', apiRouter);
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(loadOpenApiDocument()));
 
   app.use(notFoundHandler);

@@ -67,18 +67,18 @@ test/
 
 ## Endpoint Utama
 - `GET /health`
-- `GET /api/v1/website/ping`
-- `GET /api/v1/website/products` (Bearer access token)
-- `GET /api/v1/user/ping`
-- `GET /api/v1/user/profile`
-- `POST /api/v1/auth/register`
-- `POST /api/v1/auth/verify-otp`
-- `POST /api/v1/auth/login`
-- `POST /api/v1/auth/refresh-token`
-- `POST /api/v1/auth/forgot-password`
-- `POST /api/v1/auth/reset-password`
-- `POST /api/v1/auth/google/register`
-- `POST /api/v1/auth/google/login`
+- `GET /api/website/ping`
+- `GET /api/website/products` (Bearer access token)
+- `GET /api/user/ping`
+- `GET /api/user/profile`
+- `POST /api/auth/register`
+- `POST /api/auth/verify-otp`
+- `POST /api/auth/login`
+- `POST /api/auth/refresh-token`
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
+- `POST /api/auth/google/register`
+- `POST /api/auth/google/login`
 - `GET /docs`
 
 ## Dokumentasi Terpisah (.md)

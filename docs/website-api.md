@@ -6,20 +6,20 @@ Dokumentasi ini khusus untuk endpoint channel **Website**.
 - Local: `http://localhost:3000`
 
 ## Autentikasi
-- `GET /api/v1/website/ping` bersifat public.
-- `GET /api/v1/website/products` membutuhkan login user terlebih dahulu.
+- `GET /api/website/ping` bersifat public.
+- `GET /api/website/products` membutuhkan login user terlebih dahulu.
 - Gunakan header:
   - `Authorization: Bearer YOUR_ACCESS_TOKEN`
-  - Access token didapat dari endpoint login (`/api/v1/auth/login` atau Google login) dan disimpan sementara di Redis.
+  - Access token didapat dari endpoint login (`/api/auth/login` atau Google login) dan disimpan sementara di Redis.
 
 ## Endpoint
 
-### 1) GET `/api/v1/website/ping`
+### 1) GET `/api/website/ping`
 Cek konektivitas channel website.
 
 **Contoh Request**
 ```bash
-curl --location 'http://localhost:3000/api/v1/website/ping' \
+curl --location 'http://localhost:3000/api/website/ping' \
   --header 'Content-Type: application/json'
 ```
 
@@ -31,12 +31,12 @@ curl --location 'http://localhost:3000/api/v1/website/ping' \
 }
 ```
 
-### 2) GET `/api/v1/website/products`
+### 2) GET `/api/website/products`
 Mengambil daftar produk PPOB aktif (hanya untuk user yang sudah login).
 
 **Contoh Request**
 ```bash
-curl --location 'http://localhost:3000/api/v1/website/products' \
+curl --location 'http://localhost:3000/api/website/products' \
   --header 'Content-Type: application/json' \
   --header 'Authorization: Bearer YOUR_ACCESS_TOKEN'
 ```
@@ -61,7 +61,7 @@ curl --location 'http://localhost:3000/api/v1/website/products' \
 
 ## Error Umum
 - Endpoint website tidak memakai `x-api-key`.
-- Endpoint `/api/v1/website/products` dapat mengembalikan `401` jika:
+- Endpoint `/api/website/products` dapat mengembalikan `401` jika:
   - header Authorization tidak ada
   - format bukan Bearer token
   - access token tidak valid / tidak ditemukan di Redis

@@ -16,12 +16,12 @@ Semua endpoint user wajib:
 
 ## Endpoint
 
-### 1) GET `/api/v1/user/ping`
+### 1) GET `/api/user/ping`
 Cek konektivitas channel user.
 
 **Contoh Request**
 ```bash
-curl --location 'http://localhost:3000/api/v1/user/ping' \
+curl --location 'http://localhost:3000/api/user/ping' \
   --header 'x-api-key: YOUR_API_KEY_HERE'
 ```
 
@@ -33,12 +33,12 @@ curl --location 'http://localhost:3000/api/v1/user/ping' \
 }
 ```
 
-### 2) GET `/api/v1/user/profile`
+### 2) GET `/api/user/profile`
 Mengambil informasi akun user berdasarkan `x-api-key` milik user yang sedang mengakses (siap dipakai sebagai data awal transaksi).
 
 **Contoh Request**
 ```bash
-curl --location 'http://localhost:3000/api/v1/user/profile' \
+curl --location 'http://localhost:3000/api/user/profile' \
   --header 'x-api-key: YOUR_API_KEY_HERE'
 ```
 
