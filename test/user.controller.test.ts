@@ -25,7 +25,6 @@ describe('UserController', () => {
 
   it('should return profile by x-api-key', async () => {
     const profile = {
-      id: 1,
       name: 'Demo User',
       email: 'demo@example.com',
       balance: 500000,
