@@ -12,6 +12,7 @@ interface AuthUserRow extends RowDataPacket {
   email: string;
   phone: string;
   apikey: string;
+  avatar: string | null;
   password_hash: string | null;
   google_id: string | null;
   email_verified_at: string | null;
@@ -53,7 +54,7 @@ interface CreateUserInput {
   emailVerified: boolean;
 }
 
-const authUserSelectSql = `SELECT id, username, name, email, phone, apikey, password_hash, google_id, email_verified_at, refresh_token_hash, refresh_token_expired, multilogin, failed_login_attempts, locked_until, mfa_enabled, mfa_otp_hash, mfa_otp_expired, status
+const authUserSelectSql = `SELECT id, username, name, email, phone, apikey, avatar, password_hash, google_id, email_verified_at, refresh_token_hash, refresh_token_expired, multilogin, failed_login_attempts, locked_until, mfa_enabled, mfa_otp_hash, mfa_otp_expired, status
  FROM users`;
 
 const toAuthUser = (row: AuthUserRow): AuthUser => ({
@@ -63,6 +64,7 @@ const toAuthUser = (row: AuthUserRow): AuthUser => ({
   email: row.email,
   phone: row.phone,
   apikey: row.apikey,
+  avatar: row.avatar,
   passwordHash: row.password_hash,
   googleId: row.google_id,
   emailVerifiedAt: row.email_verified_at,

@@ -256,7 +256,32 @@ Header:
 }
 ```
 
-### 11) PATCH `/api/auth/policy`
+### 11) GET `/api/auth/me`
+Menampilkan informasi user login saat ini setelah berhasil login.
+
+Header:
+- `Authorization: Bearer <accessToken>`
+
+**Response 200**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "username": "demouser",
+    "name": "demouser",
+    "email": "demouser@gmail.com",
+    "phone": "081234567890",
+    "status": "active",
+    "avatar": null,
+    "emailVerifiedAt": "2026-03-19T10:00:00.000Z",
+    "mfaEnabled": false,
+    "multilogin": true
+  }
+}
+```
+
+### 12) PATCH `/api/auth/policy`
 Memperbarui kebijakan autentikasi user login saat ini.
 
 Header:
@@ -285,7 +310,7 @@ Catatan:
 }
 ```
 
-### 12) GET `/api/auth/sessions`
+### 13) GET `/api/auth/sessions`
 Menampilkan sesi refresh aktif user login saat ini.
 
 Header:
@@ -307,7 +332,7 @@ Header:
 }
 ```
 
-### 13) DELETE `/api/auth/sessions/:sessionId`
+### 14) DELETE `/api/auth/sessions/:sessionId`
 Mencabut satu sesi refresh aktif berdasarkan `sessionId`.
 
 Header:
@@ -321,7 +346,7 @@ Header:
 }
 ```
 
-### 14) GET `/api/auth/security-logs`
+### 15) GET `/api/auth/security-logs`
 Mengambil log keamanan autentikasi milik user login saat ini.
 
 Header:

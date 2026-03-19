@@ -112,4 +112,11 @@ describe('Auth API validation', () => {
     expect(response.status).toBe(400);
     expect(response.body.success).toBe(false);
   });
+
+  it('should require authorization for auth me endpoint', async () => {
+    const response = await request(app).get('/api/auth/me');
+
+    expect(response.status).toBe(401);
+    expect(response.body.success).toBe(false);
+  });
 });

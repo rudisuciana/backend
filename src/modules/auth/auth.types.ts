@@ -5,6 +5,7 @@ export interface AuthUser {
   email: string;
   phone: string;
   apikey: string;
+  avatar: string | null;
   passwordHash: string | null;
   googleId: string | null;
   emailVerifiedAt: string | null;
@@ -27,6 +28,19 @@ export interface AuthTokens {
 export interface AuthPolicy {
   multilogin: boolean;
   mfaEnabled: boolean;
+}
+
+export interface AuthMe {
+  id: number;
+  username: string;
+  name: string;
+  email: string;
+  phone: string;
+  status: string;
+  avatar: string | null;
+  emailVerifiedAt: string | null;
+  mfaEnabled: boolean;
+  multilogin: boolean;
 }
 
 export interface AuthSession {

@@ -56,6 +56,31 @@ components:
           type: string
         refreshToken:
           type: string
+    AuthMe:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+        avatar:
+          type: string
+          nullable: true
+        emailVerifiedAt:
+          type: string
+          nullable: true
+        mfaEnabled:
+          type: boolean
+        multilogin:
+          type: boolean
 paths:
   /health:
     get:
@@ -239,3 +264,23 @@ paths:
                     type: boolean
                   data:
                     $ref: '#/components/schemas/AuthTokens'
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      summary: Get current logged-in user information using access token
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/AuthMe'
+        '401':
+          description: Missing or invalid bearer access token

@@ -45,6 +45,7 @@ authRouter.post('/forgot-password', authController.forgotPassword);
 authRouter.post('/reset-password', authController.resetPassword);
 authRouter.post('/google/register', authController.registerGoogle);
 authRouter.post('/google/login', authController.loginGoogle);
+authRouter.get('/me', requireAccessToken(), authController.getMe);
 authRouter.get('/policy', requireAccessToken(), authController.getAuthPolicy);
 authRouter.patch('/policy', requireAccessToken(), authController.updateAuthPolicy);
 authRouter.get('/sessions', requireAccessToken(), authController.getSessions);

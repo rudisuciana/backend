@@ -394,6 +394,22 @@ export class AuthController {
     }
   };
 
+  getMe = async (req: Request, res: Response): Promise<void> => {
+    const authUserId = req.authUserId;
+    if (!authUserId) {
+      res.status(401).json({ success: false, message: 'Authorization header is required' });
+      return;
+    }
+
+    try {
+      const me = await this.authService.getMe(authUserId);
+      res.json({ success: true, data: me });
+    } catch (error) {
+      const mapped = mapAuthError(error);
+      res.status(mapped.status).json({ success: false, message: mapped.message });
+    }
+  };
+
   getAuthPolicy = async (req: Request, res: Response): Promise<void> => {
     const authUserId = req.authUserId;
     if (!authUserId) {

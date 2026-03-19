@@ -6,7 +6,7 @@ import { google } from 'googleapis';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
 import { AuthRepository } from './auth.repository';
-import type { AuthPolicy, AuthSecurityLog, AuthSession, AuthTokens, AuthUser } from './auth.types';
+import type { AuthMe, AuthPolicy, AuthSecurityLog, AuthSession, AuthTokens, AuthUser } from './auth.types';
 
 interface RegisterInput {
   username: string;
@@ -288,6 +288,26 @@ export class AuthService {
     }
 
     return updatedPolicy;
+  }
+
+  async getMe(userId: number): Promise<AuthMe> {
+    const user = await this.authRepository.getUserById(userId);
+    if (!user) {
+      throw new Error('USER_NOT_FOUND');
+    }
+
+    return {
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      status: user.status,
+      avatar: user.avatar,
+      emailVerifiedAt: user.emailVerifiedAt,
+      mfaEnabled: user.mfaEnabled,
+      multilogin: user.multilogin
+    };
   }
 
   async getActiveSessions(userId: number): Promise<AuthSession[]> {
