@@ -257,12 +257,12 @@ atau
 
 ## Panduan Frontend (refresh token di-hash backend)
 
-Tidak masalah refresh token di-hash di backend, karena frontend **tetap menyimpan token asli** dari response login. Hash hanya disimpan server untuk verifikasi.
+Hash refresh token tetap disimpan di backend untuk verifikasi. Untuk integrasi yang direkomendasikan, frontend tidak perlu menyimpan refresh token sendiri karena backend mengirimkannya via HttpOnly cookie.
 
 Alur yang disarankan:
 1. Saat login sukses, simpan `accessToken` (memory). Biarkan backend mengelola `refresh_token` di HttpOnly cookie.
 2. Simpan `csrf_token` dari cookie non-HttpOnly, kirim nilainya ke header `x-csrf-token` saat memanggil refresh/logout berbasis cookie.
-3. Jika request API gagal 401 karena access token expired, panggil `POST /api/auth/refresh-token`.
+3. Jika request API gagal 401 karena access token expired, panggil `POST /api/auth/refresh-token` tanpa body refresh token (cookie akan ikut otomatis).
 4. Jika refresh sukses, update access token dan ulangi request sebelumnya.
 4. Jika refresh gagal (401 Invalid refresh token), paksa logout user (hapus token lokal, arahkan ke halaman login).
 5. Saat user klik logout, panggil `POST /api/auth/logout` agar sesi refresh di server diinvalidasi.

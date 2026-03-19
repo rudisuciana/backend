@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
+import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { AuthService } from './auth.service';
 
@@ -87,7 +88,6 @@ export class AuthController {
 
   private readonly refreshCookieName = 'refresh_token';
   private readonly csrfCookieName = 'csrf_token';
-  private readonly refreshCookieMaxAgeMs = 7 * 24 * 60 * 60 * 1000;
 
   private parseCookies(req: Request): Record<string, string> {
     const header = req.headers.cookie;
@@ -101,9 +101,28 @@ export class AuthController {
         return accumulator;
       }
 
-      accumulator[key.trim()] = decodeURIComponent(rest.join('=').trim());
+      try {
+        accumulator[key.trim()] = decodeURIComponent(rest.join('=').trim());
+      } catch {
+        accumulator[key.trim()] = rest.join('=').trim();
+      }
       return accumulator;
     }, {});
+  }
+
+  private getRefreshTokenMaxAgeMs(refreshToken: string): number {
+    const decoded = jwt.decode(refreshToken) as jwt.JwtPayload | null;
+    if (!decoded?.exp) {
+      return 7 * 24 * 60 * 60 * 1000;
+    }
+
+    const expiresAtMs = decoded.exp * 1000;
+    const maxAge = expiresAtMs - Date.now();
+    if (maxAge <= 0) {
+      return 0;
+    }
+
+    return maxAge;
   }
 
   private getRefreshToken(req: Request): { value: string | null; source: 'body' | 'cookie' | null } {
@@ -138,19 +157,20 @@ export class AuthController {
   private setAuthCookies(res: Response, refreshToken: string): void {
     const isProduction = process.env.NODE_ENV === 'production';
     const csrfToken = randomUUID();
+    const refreshCookieMaxAgeMs = this.getRefreshTokenMaxAgeMs(refreshToken);
 
     res.cookie(this.refreshCookieName, refreshToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'strict',
-      maxAge: this.refreshCookieMaxAgeMs,
+      maxAge: refreshCookieMaxAgeMs,
       path: '/api/auth'
     });
     res.cookie(this.csrfCookieName, csrfToken, {
       httpOnly: false,
       secure: isProduction,
       sameSite: 'strict',
-      maxAge: this.refreshCookieMaxAgeMs,
+      maxAge: refreshCookieMaxAgeMs,
       path: '/api/auth'
     });
   }

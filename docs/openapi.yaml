@@ -56,11 +56,6 @@ components:
           type: string
         refreshToken:
           type: string
-    AccessTokenPayload:
-      type: object
-      properties:
-        accessToken:
-          type: string
 paths:
   /health:
     get:
@@ -172,7 +167,7 @@ paths:
   /api/auth/refresh-token:
     post:
       tags: [Auth]
-      summary: Refresh only access token using valid refresh token (refresh token itself is not rotated)
+      summary: Refresh access token and rotate refresh token (supports body token or HttpOnly cookie with CSRF header)
       responses:
         '200':
           description: Token refreshed
@@ -184,16 +179,20 @@ paths:
                   success:
                     type: boolean
                   data:
-                    $ref: '#/components/schemas/AccessTokenPayload'
+                    $ref: '#/components/schemas/AuthTokens'
+        '403':
+          description: Invalid CSRF token for cookie-based refresh
   /api/auth/logout:
     post:
       tags: [Auth]
-      summary: Logout user by invalidating stored refresh session
+      summary: Logout user by invalidating stored refresh session (supports body token or HttpOnly cookie with CSRF header)
       responses:
         '200':
           description: Logout successful
         '401':
           description: Invalid refresh token
+        '403':
+          description: Invalid CSRF token for cookie-based logout
   /api/auth/forgot-password:
     post:
       tags: [Auth]
