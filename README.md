@@ -71,6 +71,10 @@ test/
 - `POST /api/v1/auth/google/login`
 - `GET /docs`
 
+## Dokumentasi Terpisah (.md)
+- Website API: `docs/website-api.md`
+- User API: `docs/user-api.md`
+
 ## Database
 - Jalankan SQL schema: `database/mysql/schema.sql`
 - Jalankan SQL seed: `database/mysql/seed.sql`

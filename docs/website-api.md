@@ -1,5 +1,10 @@
 # Dokumentasi Website API
 
+Dokumentasi ini khusus untuk endpoint channel **Website**.
+
+## Base URL
+- Local: `http://localhost:3000`
+
 ## Autentikasi
 Semua endpoint website wajib header:
 
@@ -9,6 +14,12 @@ Semua endpoint website wajib header:
 
 ### 1) GET `/api/v1/website/ping`
 Cek konektivitas channel website.
+
+**Contoh Request**
+```bash
+curl --location 'http://localhost:3000/api/v1/website/ping' \
+  --header 'x-api-key: website-secret-key'
+```
 
 **Response 200**
 ```json
@@ -20,6 +31,12 @@ Cek konektivitas channel website.
 
 ### 2) GET `/api/v1/website/products`
 Mengambil daftar produk PPOB aktif.
+
+**Contoh Request**
+```bash
+curl --location 'http://localhost:3000/api/v1/website/products' \
+  --header 'x-api-key: website-secret-key'
+```
 
 **Response 200**
 ```json
@@ -36,5 +53,23 @@ Mengambil daftar produk PPOB aktif.
       "isActive": true
     }
   ]
+}
+```
+
+## Error Umum
+
+**Response 401 - x-api-key tidak dikirim**
+```json
+{
+  "success": false,
+  "message": "Missing x-api-key header"
+}
+```
+
+**Response 403 - x-api-key tidak valid**
+```json
+{
+  "success": false,
+  "message": "Invalid x-api-key"
 }
 ```
