@@ -1,0 +1,121 @@
+openapi: 3.0.3
+info:
+  title: PPOB Backend Blueprint API
+  version: 1.0.0
+  description: API blueprint for website and user channels with x-api-key authorization.
+servers:
+  - url: http://localhost:3000
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+  schemas:
+    WebsiteProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        adminFee:
+          type: number
+        isActive:
+          type: boolean
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        balance:
+          type: number
+        status:
+          type: string
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Check service health (MySQL and Redis)
+      responses:
+        '200':
+          description: All services up
+        '503':
+          description: One or more services down
+  /api/v1/website/ping:
+    get:
+      tags: [Website]
+      security:
+        - ApiKeyAuth: []
+      summary: Basic connectivity test for website client
+      responses:
+        '200':
+          description: Website API reachable
+  /api/v1/website/products:
+    get:
+      tags: [Website]
+      security:
+        - ApiKeyAuth: []
+      summary: List active PPOB products
+      responses:
+        '200':
+          description: Product list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WebsiteProduct'
+  /api/v1/user/ping:
+    get:
+      tags: [User]
+      security:
+        - ApiKeyAuth: []
+      summary: Basic connectivity test for user client
+      responses:
+        '200':
+          description: User API reachable
+  /api/v1/user/profile:
+    get:
+      tags: [User]
+      security:
+        - ApiKeyAuth: []
+      summary: Get user profile by userId
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: User profile found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: Invalid userId
+        '404':
+          description: User not found

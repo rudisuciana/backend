@@ -1,1 +1,72 @@
-# backend
+# PPOB Backend Blueprint (TypeScript + MySQL + Redis)
+
+Blueprint backend profesional untuk PPOB dengan pemisahan modul Website dan User, autentikasi `x-api-key`, logger, dokumentasi API, serta skema database MySQL.
+
+## Stack
+- Node.js + TypeScript
+- Express.js
+- MySQL (`mysql2`)
+- Redis (`ioredis`)
+- Pino logger (`pino`, `pino-http`)
+- OpenAPI docs (`swagger-ui-express`)
+- Testing (`vitest`, `supertest`)
+
+## Struktur Project
+
+```bash
+src/
+  config/
+  infrastructure/
+  middlewares/
+  modules/
+    website/
+    user/
+  routes/
+  app.ts
+  server.ts
+docs/
+  openapi.yaml
+  website-api.md
+  user-api.md
+database/mysql/
+  schema.sql
+  seed.sql
+test/
+  app.test.ts
+```
+
+## Setup
+
+1. Copy environment:
+   ```bash
+   cp .env.example .env
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Build project:
+   ```bash
+   npm run build
+   ```
+4. Run development server:
+   ```bash
+   npm run dev
+   ```
+
+## Endpoint Utama
+- `GET /health`
+- `GET /api/v1/website/ping`
+- `GET /api/v1/website/products`
+- `GET /api/v1/user/ping`
+- `GET /api/v1/user/profile?userId=1`
+- `GET /docs`
+
+## Database
+- Jalankan SQL schema: `database/mysql/schema.sql`
+- Jalankan SQL seed: `database/mysql/seed.sql`
+
+## Testing
+```bash
+npm run test
+```
