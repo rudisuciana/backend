@@ -4,6 +4,7 @@ import { isTest } from '../../config/env';
 import { getMySQLPool } from '../../infrastructure/mysql';
 import { getRedisClient } from '../../infrastructure/redis';
 import { RedisRateLimitStore } from '../../middlewares/redisRateLimitStore';
+import { requireAccessToken } from '../../middlewares/accessToken.middleware';
 import { AuthController } from './auth.controller';
 import { AuthRepository } from './auth.repository';
 import { AuthService } from './auth.service';
@@ -44,5 +45,10 @@ authRouter.post('/forgot-password', authController.forgotPassword);
 authRouter.post('/reset-password', authController.resetPassword);
 authRouter.post('/google/register', authController.registerGoogle);
 authRouter.post('/google/login', authController.loginGoogle);
+authRouter.get('/policy', requireAccessToken(), authController.getAuthPolicy);
+authRouter.patch('/policy', requireAccessToken(), authController.updateAuthPolicy);
+authRouter.get('/sessions', requireAccessToken(), authController.getSessions);
+authRouter.delete('/sessions/:sessionId', requireAccessToken(), authController.revokeSession);
+authRouter.get('/security-logs', requireAccessToken(), authController.getSecurityLogs);
 
 export { authRouter };

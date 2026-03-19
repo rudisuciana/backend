@@ -80,6 +80,11 @@ test/
 - `POST /api/auth/reset-password`
 - `POST /api/auth/google/register`
 - `POST /api/auth/google/login`
+- `GET /api/auth/policy` (Bearer access token)
+- `PATCH /api/auth/policy` (Bearer access token)
+- `GET /api/auth/sessions` (Bearer access token)
+- `DELETE /api/auth/sessions/:sessionId` (Bearer access token)
+- `GET /api/auth/security-logs` (Bearer access token)
 - `GET /docs`
 
 ## Dokumentasi Terpisah (.md)

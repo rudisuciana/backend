@@ -24,6 +24,28 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
+export interface AuthPolicy {
+  multilogin: boolean;
+  mfaEnabled: boolean;
+}
+
+export interface AuthSession {
+  id: number;
+  refreshTokenExpired: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+}
+
+export interface AuthSecurityLog {
+  id: number;
+  event: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  metadata: string | null;
+  createdAt: string;
+}
+
 export interface AccessTokenPayload {
   accessToken: string;
 }

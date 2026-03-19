@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
-import type { AuthUser } from './auth.types';
+import type { AuthPolicy, AuthSecurityLog, AuthSession, AuthUser } from './auth.types';
 
 const ACCOUNT_LOCK_THRESHOLD = 5;
 const ACCOUNT_LOCK_DURATION_MINUTES = 15;
@@ -24,6 +24,23 @@ interface AuthUserRow extends RowDataPacket {
   mfa_otp_hash: string | null;
   mfa_otp_expired: string | null;
   status: string;
+}
+
+interface SessionRow extends RowDataPacket {
+  id: number;
+  refresh_token_expired: string;
+  user_agent: string | null;
+  ip_address: string | null;
+  created_at: string;
+}
+
+interface SecurityLogRow extends RowDataPacket {
+  id: number;
+  event: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  metadata: string | null;
+  created_at: string;
 }
 
 interface CreateUserInput {
@@ -189,6 +206,34 @@ export class AuthRepository {
     );
   }
 
+  async setMfaEnabled(userId: number, mfaEnabled: boolean): Promise<void> {
+    await this.mysqlPool.execute(
+      `UPDATE users
+       SET mfa_enabled = ?
+       WHERE id = ?`,
+      [mfaEnabled ? 1 : 0, userId]
+    );
+  }
+
+  async getAuthPolicy(userId: number): Promise<AuthPolicy | null> {
+    const [rows] = await this.mysqlPool.query<AuthUserRow[]>(
+      `SELECT multilogin, mfa_enabled
+       FROM users
+       WHERE id = ?
+       LIMIT 1`,
+      [userId]
+    );
+
+    if (!rows.length) {
+      return null;
+    }
+
+    return {
+      multilogin: Boolean(rows[0].multilogin),
+      mfaEnabled: Boolean(rows[0].mfa_enabled)
+    };
+  }
+
   async clearRefreshSessions(userId: number): Promise<void> {
     await this.setRefreshTokenHash(userId, null, null);
     await this.revokeActiveSessions(userId);
@@ -257,6 +302,55 @@ export class AuthRepository {
        WHERE user_id = ? AND revoked_at IS NULL`,
       [userId]
     );
+  }
+
+  async getActiveSessionsByUserId(userId: number): Promise<AuthSession[]> {
+    const [rows] = await this.mysqlPool.query<SessionRow[]>(
+      `SELECT id, refresh_token_expired, user_agent, ip_address, created_at
+       FROM user_sessions
+       WHERE user_id = ? AND revoked_at IS NULL AND refresh_token_expired > CURRENT_TIMESTAMP
+       ORDER BY created_at DESC`,
+      [userId]
+    );
+
+    return rows.map((row) => ({
+      id: row.id,
+      refreshTokenExpired: row.refresh_token_expired,
+      userAgent: row.user_agent,
+      ipAddress: row.ip_address,
+      createdAt: row.created_at
+    }));
+  }
+
+  async revokeSessionById(userId: number, sessionId: number): Promise<boolean> {
+    const [result] = await this.mysqlPool.execute<ResultSetHeader>(
+      `UPDATE user_sessions
+       SET revoked_at = CURRENT_TIMESTAMP
+       WHERE id = ? AND user_id = ? AND revoked_at IS NULL`,
+      [sessionId, userId]
+    );
+
+    return result.affectedRows > 0;
+  }
+
+  async getSecurityLogsByUserId(userId: number, limit: number): Promise<AuthSecurityLog[]> {
+    const [rows] = await this.mysqlPool.query<SecurityLogRow[]>(
+      `SELECT id, event, ip_address, user_agent, metadata, created_at
+       FROM auth_security_logs
+       WHERE user_id = ?
+       ORDER BY created_at DESC
+       LIMIT ?`,
+      [userId, limit]
+    );
+
+    return rows.map((row) => ({
+      id: row.id,
+      event: row.event,
+      ipAddress: row.ip_address,
+      userAgent: row.user_agent,
+      metadata: row.metadata,
+      createdAt: row.created_at
+    }));
   }
 
   async createSecurityLog(userId: number | null, event: string, metadata?: string): Promise<void> {

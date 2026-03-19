@@ -239,6 +239,116 @@ Login menggunakan Google ID token.
 }
 ```
 
+### 10) GET `/api/auth/policy`
+Mengambil kebijakan autentikasi user login saat ini.
+
+Header:
+- `Authorization: Bearer <accessToken>`
+
+**Response 200**
+```json
+{
+  "success": true,
+  "data": {
+    "multilogin": true,
+    "mfaEnabled": false
+  }
+}
+```
+
+### 11) PATCH `/api/auth/policy`
+Memperbarui kebijakan autentikasi user login saat ini.
+
+Header:
+- `Authorization: Bearer <accessToken>`
+
+**Body Request** (minimal satu field wajib diisi)
+```json
+{
+  "multilogin": false,
+  "mfaEnabled": true
+}
+```
+
+Catatan:
+- Saat `multilogin` diubah ke `false`, sesi refresh aktif user akan dicabut.
+- Saat `mfaEnabled` diubah ke `false`, OTP MFA yang masih aktif akan dibersihkan.
+
+**Response 200**
+```json
+{
+  "success": true,
+  "data": {
+    "multilogin": false,
+    "mfaEnabled": true
+  }
+}
+```
+
+### 12) GET `/api/auth/sessions`
+Menampilkan sesi refresh aktif user login saat ini.
+
+Header:
+- `Authorization: Bearer <accessToken>`
+
+**Response 200**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "refreshTokenExpired": "2026-03-26T10:00:00.000Z",
+      "userAgent": "Mozilla/5.0 ...",
+      "ipAddress": "127.0.0.1",
+      "createdAt": "2026-03-19T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+### 13) DELETE `/api/auth/sessions/:sessionId`
+Mencabut satu sesi refresh aktif berdasarkan `sessionId`.
+
+Header:
+- `Authorization: Bearer <accessToken>`
+
+**Response 200**
+```json
+{
+  "success": true,
+  "message": "Session revoked"
+}
+```
+
+### 14) GET `/api/auth/security-logs`
+Mengambil log keamanan autentikasi milik user login saat ini.
+
+Header:
+- `Authorization: Bearer <accessToken>`
+
+Query opsional:
+- `limit` (1-100, default 20)
+
+Contoh: `/api/auth/security-logs?limit=10`
+
+**Response 200**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 12,
+      "event": "login_failed",
+      "ipAddress": null,
+      "userAgent": null,
+      "metadata": null,
+      "createdAt": "2026-03-19T10:02:00.000Z"
+    }
+  ]
+}
+```
+
 ## Error Umum
 
 **Response 400 - payload tidak valid**

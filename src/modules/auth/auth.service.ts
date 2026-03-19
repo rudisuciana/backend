@@ -6,7 +6,7 @@ import { google } from 'googleapis';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
 import { AuthRepository } from './auth.repository';
-import type { AuthTokens, AuthUser } from './auth.types';
+import type { AuthPolicy, AuthSecurityLog, AuthSession, AuthTokens, AuthUser } from './auth.types';
 
 interface RegisterInput {
   username: string;
@@ -39,6 +39,11 @@ interface ResetPasswordInput {
 interface GoogleAuthInput {
   idToken: string;
   phone?: string;
+}
+
+interface UpdateAuthPolicyInput {
+  multilogin?: boolean;
+  mfaEnabled?: boolean;
 }
 
 type TokenType = 'access' | 'refresh';
@@ -235,6 +240,78 @@ export class AuthService {
     }
 
     return this.issueAndStoreTokens(user);
+  }
+
+  async getAuthPolicy(userId: number): Promise<AuthPolicy> {
+    const policy = await this.authRepository.getAuthPolicy(userId);
+    if (!policy) {
+      throw new Error('USER_NOT_FOUND');
+    }
+
+    return policy;
+  }
+
+  async updateAuthPolicy(userId: number, input: UpdateAuthPolicyInput): Promise<AuthPolicy> {
+    const existingUser = await this.authRepository.getUserById(userId);
+    if (!existingUser) {
+      throw new Error('USER_NOT_FOUND');
+    }
+
+    if (typeof input.multilogin === 'boolean') {
+      await this.authRepository.setMultilogin(userId, input.multilogin);
+      await this.authRepository.createSecurityLog(
+        userId,
+        'auth_policy_multilogin_updated',
+        JSON.stringify({ multilogin: input.multilogin })
+      );
+      if (!input.multilogin) {
+        await this.authRepository.clearRefreshSessions(userId);
+        await this.authRepository.createSecurityLog(userId, 'session_single_enforced');
+      }
+    }
+
+    if (typeof input.mfaEnabled === 'boolean') {
+      await this.authRepository.setMfaEnabled(userId, input.mfaEnabled);
+      await this.authRepository.createSecurityLog(
+        userId,
+        'auth_policy_mfa_updated',
+        JSON.stringify({ mfaEnabled: input.mfaEnabled })
+      );
+      if (!input.mfaEnabled) {
+        await this.authRepository.clearMfaOtp(userId);
+      }
+    }
+
+    const updatedPolicy = await this.authRepository.getAuthPolicy(userId);
+    if (!updatedPolicy) {
+      throw new Error('USER_NOT_FOUND');
+    }
+
+    return updatedPolicy;
+  }
+
+  async getActiveSessions(userId: number): Promise<AuthSession[]> {
+    await this.ensureUserExists(userId);
+    return this.authRepository.getActiveSessionsByUserId(userId);
+  }
+
+  async revokeSession(userId: number, sessionId: number): Promise<void> {
+    await this.ensureUserExists(userId);
+    const revoked = await this.authRepository.revokeSessionById(userId, sessionId);
+    if (!revoked) {
+      throw new Error('SESSION_NOT_FOUND');
+    }
+
+    await this.authRepository.createSecurityLog(
+      userId,
+      'session_revoked',
+      JSON.stringify({ sessionId })
+    );
+  }
+
+  async getSecurityLogs(userId: number, limit: number): Promise<AuthSecurityLog[]> {
+    await this.ensureUserExists(userId);
+    return this.authRepository.getSecurityLogsByUserId(userId, limit);
   }
 
   async logout(refreshToken: string): Promise<void> {
@@ -496,5 +573,12 @@ export class AuthService {
     }
 
     return env.auth.refreshTokenSecrets[kid] ?? env.auth.refreshTokenSecret;
+  }
+
+  private async ensureUserExists(userId: number): Promise<void> {
+    const user = await this.authRepository.getUserById(userId);
+    if (!user) {
+      throw new Error('USER_NOT_FOUND');
+    }
   }
 }

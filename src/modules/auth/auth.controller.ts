@@ -45,6 +45,23 @@ const googleSchema = z.object({
   phone: z.string().trim().min(8).max(20).optional()
 });
 
+const authPolicyPatchSchema = z
+  .object({
+    multilogin: z.boolean().optional(),
+    mfaEnabled: z.boolean().optional()
+  })
+  .refine((value) => value.multilogin !== undefined || value.mfaEnabled !== undefined, {
+    message: 'At least one field must be provided'
+  });
+
+const sessionRevokeSchema = z.object({
+  sessionId: z.coerce.number().int().positive()
+});
+
+const securityLogsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional()
+});
+
 const mapAuthError = (error: unknown): { status: number; message: string } => {
   if (!(error instanceof Error)) {
     return { status: 500, message: 'Internal server error' };
@@ -85,6 +102,8 @@ const mapAuthError = (error: unknown): { status: number; message: string } => {
       return { status: 400, message: 'Only Gmail addresses are allowed' };
     case 'GOOGLE_ACCOUNT_ALREADY_USED':
       return { status: 409, message: 'Resource conflict' };
+    case 'SESSION_NOT_FOUND':
+      return { status: 404, message: 'Session not found' };
     default:
       return { status: 500, message: 'Internal server error' };
   }
@@ -369,6 +388,104 @@ export class AuthController {
       const tokens = await this.authService.loginWithGoogle(parsed.data);
       this.setAuthCookies(res, tokens.refreshToken);
       res.json({ success: true, data: tokens });
+    } catch (error) {
+      const mapped = mapAuthError(error);
+      res.status(mapped.status).json({ success: false, message: mapped.message });
+    }
+  };
+
+  getAuthPolicy = async (req: Request, res: Response): Promise<void> => {
+    const authUserId = req.authUserId;
+    if (!authUserId) {
+      res.status(401).json({ success: false, message: 'Authorization header is required' });
+      return;
+    }
+
+    try {
+      const policy = await this.authService.getAuthPolicy(authUserId);
+      res.json({ success: true, data: policy });
+    } catch (error) {
+      const mapped = mapAuthError(error);
+      res.status(mapped.status).json({ success: false, message: mapped.message });
+    }
+  };
+
+  updateAuthPolicy = async (req: Request, res: Response): Promise<void> => {
+    const authUserId = req.authUserId;
+    if (!authUserId) {
+      res.status(401).json({ success: false, message: 'Authorization header is required' });
+      return;
+    }
+
+    const parsed = authPolicyPatchSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ success: false, message: 'Invalid auth policy payload' });
+      return;
+    }
+
+    try {
+      const policy = await this.authService.updateAuthPolicy(authUserId, parsed.data);
+      res.json({ success: true, data: policy });
+    } catch (error) {
+      const mapped = mapAuthError(error);
+      res.status(mapped.status).json({ success: false, message: mapped.message });
+    }
+  };
+
+  getSessions = async (req: Request, res: Response): Promise<void> => {
+    const authUserId = req.authUserId;
+    if (!authUserId) {
+      res.status(401).json({ success: false, message: 'Authorization header is required' });
+      return;
+    }
+
+    try {
+      const sessions = await this.authService.getActiveSessions(authUserId);
+      res.json({ success: true, data: sessions });
+    } catch (error) {
+      const mapped = mapAuthError(error);
+      res.status(mapped.status).json({ success: false, message: mapped.message });
+    }
+  };
+
+  revokeSession = async (req: Request, res: Response): Promise<void> => {
+    const authUserId = req.authUserId;
+    if (!authUserId) {
+      res.status(401).json({ success: false, message: 'Authorization header is required' });
+      return;
+    }
+
+    const parsed = sessionRevokeSchema.safeParse(req.params);
+    if (!parsed.success) {
+      res.status(400).json({ success: false, message: 'Invalid session id' });
+      return;
+    }
+
+    try {
+      await this.authService.revokeSession(authUserId, parsed.data.sessionId);
+      res.json({ success: true, message: 'Session revoked' });
+    } catch (error) {
+      const mapped = mapAuthError(error);
+      res.status(mapped.status).json({ success: false, message: mapped.message });
+    }
+  };
+
+  getSecurityLogs = async (req: Request, res: Response): Promise<void> => {
+    const authUserId = req.authUserId;
+    if (!authUserId) {
+      res.status(401).json({ success: false, message: 'Authorization header is required' });
+      return;
+    }
+
+    const parsed = securityLogsQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ success: false, message: 'Invalid security logs query' });
+      return;
+    }
+
+    try {
+      const logs = await this.authService.getSecurityLogs(authUserId, parsed.data.limit ?? 20);
+      res.json({ success: true, data: logs });
     } catch (error) {
       const mapped = mapAuthError(error);
       res.status(mapped.status).json({ success: false, message: mapped.message });
