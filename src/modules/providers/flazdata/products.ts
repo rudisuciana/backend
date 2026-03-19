@@ -7,6 +7,7 @@ interface FlazdataProductApiResponseItem {
 }
 
 interface FlazdataProductApiResponse {
+  success?: unknown;
   data?: unknown;
 }
 
@@ -81,9 +82,13 @@ export const getFlazdataProducts = async (): Promise<FlazdataProduct[]> => {
   });
 
   if (!response.ok) {
-    throw new Error(`FLAZDATA_REQUEST_FAILED:${response.status}`);
+    return [];
   }
 
   const payload = (await response.json()) as FlazdataProductApiResponse;
+  if (payload.success !== true) {
+    return [];
+  }
+
   return normalizeResponseData(payload.data).map(mapProduct);
 };

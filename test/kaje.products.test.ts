@@ -80,7 +80,7 @@ describe('Kaje products mapper', () => {
     await expect(getKajeProducts()).rejects.toThrow('KAJE_URL_IS_REQUIRED');
   });
 
-  it('should throw when kaje request fails', async () => {
+  it('should return empty array when kaje request fails', async () => {
     process.env.KAJE_URL = 'https://example.com/';
     process.env.KAJE_API = 'secret-key';
 
@@ -92,6 +92,26 @@ describe('Kaje products mapper', () => {
       })
     );
 
-    await expect(getKajeProducts()).rejects.toThrow('KAJE_REQUEST_FAILED:401');
+    await expect(getKajeProducts()).resolves.toEqual([]);
+  });
+
+  it('should return empty array when kaje success is false', async () => {
+    process.env.KAJE_URL = 'https://example.com/';
+    process.env.KAJE_API = 'secret-key';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: false,
+          data: {
+            products: []
+          }
+        })
+      })
+    );
+
+    await expect(getKajeProducts()).resolves.toEqual([]);
   });
 });

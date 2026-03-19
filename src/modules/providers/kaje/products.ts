@@ -12,6 +12,7 @@ interface KajeProductApiResponseData {
 }
 
 interface KajeProductApiResponse {
+  success?: unknown;
   data?: unknown;
 }
 
@@ -86,10 +87,14 @@ export const getKajeProducts = async (): Promise<KajeProduct[]> => {
   });
 
   if (!response.ok) {
-    throw new Error(`KAJE_REQUEST_FAILED:${response.status}`);
+    return [];
   }
 
   const payload = (await response.json()) as KajeProductApiResponse;
+  if (payload.success !== true) {
+    return [];
+  }
+
   const data = payload.data as KajeProductApiResponseData | undefined;
   return normalizeProducts(data?.products).map(mapProduct);
 };

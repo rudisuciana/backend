@@ -78,7 +78,7 @@ describe('Flazdata products mapper', () => {
     await expect(getFlazdataProducts()).rejects.toThrow('FLAZ_URL_IS_REQUIRED');
   });
 
-  it('should throw when flazdata request fails', async () => {
+  it('should return empty array when flazdata request fails', async () => {
     process.env.FLAZ_URL = 'https://example.com/';
     process.env.FLAZ_API = 'secret-key';
 
@@ -90,6 +90,24 @@ describe('Flazdata products mapper', () => {
       })
     );
 
-    await expect(getFlazdataProducts()).rejects.toThrow('FLAZDATA_REQUEST_FAILED:401');
+    await expect(getFlazdataProducts()).resolves.toEqual([]);
+  });
+
+  it('should return empty array when flazdata success is false', async () => {
+    process.env.FLAZ_URL = 'https://example.com/';
+    process.env.FLAZ_API = 'secret-key';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: false,
+          data: []
+        })
+      })
+    );
+
+    await expect(getFlazdataProducts()).resolves.toEqual([]);
   });
 });
