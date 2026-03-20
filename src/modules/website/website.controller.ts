@@ -19,4 +19,13 @@ export class WebsiteController {
       data: products
     });
   };
+
+  getAkrabProducts = async (_req: Request, res: Response): Promise<void> => {
+    const products = await this.websiteService.getAkrabProducts();
+
+    res.json({
+      success: true,
+      data: products
+    });
+  };
 }

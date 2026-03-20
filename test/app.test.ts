@@ -38,6 +38,20 @@ describe('PPOB backend blueprint', () => {
     expect(response.body.success).toBe(false);
   });
 
+  it('should reject website akrab-products route without bearer access token', async () => {
+    const response = await request(app).get('/api/website/akrab-products');
+
+    expect(response.status).toBe(401);
+    expect(response.body.success).toBe(false);
+  });
+
+  it('should require x-api-key on public akrab-products route', async () => {
+    const response = await request(app).get('/api/akrab-products');
+
+    expect(response.status).toBe(401);
+    expect(response.body.success).toBe(false);
+  });
+
   it('should reject oversized JSON payload', async () => {
     const response = await request(app).post('/api/auth/register').send({
       email: `a${'a'.repeat(12000)}@example.com`,
