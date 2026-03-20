@@ -54,3 +54,95 @@ ON DUPLICATE KEY UPDATE
   `value` = VALUES(`value`),
   description = VALUES(description),
   is_active = VALUES(is_active);
+
+INSERT INTO akrab (code, name, price, category, description)
+VALUES
+  (
+    'XLA14',
+    'SuperMini PROMO',
+    43000,
+    'Akrab Anggota',
+    JSON_ARRAY(
+      'Kuota Sesuai Area :',
+      '- Area 1 : 13 GB - 15 GB',
+      '- Area 2 : 15 GB - 17 GB',
+      '- Area 3 : 20 GB - 22 GB',
+      '- Area 4 : 30 GB - 32 GB',
+      'Jika myRewerd tidak masuk silahkan tunggu 1 jam baru lapor ke admin &amp; Jika semua kuota sudah habis, maka paket otomatis ke kick'
+    )
+  ),
+  (
+    'XLA32',
+    'Mini',
+    55500,
+    'Akrab Anggota',
+    JSON_ARRAY(
+      'Kuota Sesuai Area :',
+      '- Area 1 : 31.75 GB - 33.75 GB',
+      '- Area 2 : 33.75 - 35.75 GB',
+      '- Area 3 : 38.75 - 40.75 GB',
+      '- Area 4 : 48.75 - 50.75 GB',
+      'Jika myRewerd tidak masuk silahkan tunggu 1 jam baru lapor ke admin &amp; Jika semua kuota sudah habis, maka paket otomatis ke kick'
+    )
+  ),
+  (
+    'XLA39',
+    'Big',
+    60000,
+    'Akrab Anggota',
+    JSON_ARRAY(
+      'Kuota Sesuai Area :',
+      '- Area 1 : 38 GB - 40 GB',
+      '- Area 2 : 40 GB - 42 GB',
+      '- Area 3 : 45 GB - 47 GB',
+      '- Area 4 : 55 GB - 57 GB',
+      'Jika myRewerd tidak masuk silahkan tunggu 1 jam baru lapor ke admin &amp; Jika semua kuota sudah habis, maka paket otomatis ke kick'
+    )
+  ),
+  (
+    'XLA51',
+    'Jumbo V2',
+    70000,
+    'Akrab Anggota',
+    JSON_ARRAY(
+      'Kuota Sesuai Area :',
+      '- Area 1 : 50.5 - 52.5 GB',
+      '- Area 2 : 52.5 - 54.5 GB',
+      '- Area 3 : 57.5 - 59.5 GB',
+      '- Area 4 : 67.5 - 69.5 GB',
+      'Jika myRewerd tidak masuk silahkan tunggu 1 jam baru lapor ke admin &amp; Jika semua kuota sudah habis, maka paket otomatis ke kick'
+    )
+  ),
+  (
+    'XLA65',
+    'Jumbo',
+    90000,
+    'Akrab Anggota',
+    JSON_ARRAY(
+      'Kuota Sesuai Area :',
+      '- Area 1 : 65.5 - 67.5 GB',
+      '- Area 2 : 70 - 72 GB',
+      '- Area 3 : 83 - 85 GB',
+      '- Area 4 : 123 - 125 GB',
+      'Jika myRewerd tidak masuk silahkan tunggu 1 jam baru lapor ke admin &amp; Jika semua kuota sudah habis, maka paket otomatis ke kick'
+    )
+  ),
+  (
+    'XLA89',
+    'MegaBig',
+    93000,
+    'Akrab Anggota',
+    JSON_ARRAY(
+      'Kuota Sesuai Area :',
+      '- Area 1 : 88 GB - 90 GB',
+      '- Area 2 : 90 GB - 92 GB',
+      '- Area 3 : 95 GB - 97 GB',
+      '- Area 4 : 105 GB - 107 GB',
+      'Jika myRewerd tidak masuk silahkan tunggu 1 jam baru lapor ke admin &amp; Jika semua kuota sudah habis, maka paket otomatis ke kick'
+    )
+  )
+ON DUPLICATE KEY UPDATE
+  name = VALUES(name),
+  price = VALUES(price),
+  category = VALUES(category),
+  description = VALUES(description);
