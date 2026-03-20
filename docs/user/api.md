@@ -89,6 +89,38 @@ curl --location 'http://localhost:3000/api/user/profile' \
 }
 ```
 
+---
+
+### 3) GET `/api/akrab-products`
+Mengambil daftar produk Akrab dari jalur API key user.
+
+**Header Wajib**
+- `x-api-key: <USER_API_KEY>`
+
+**Contoh Request**
+```bash
+curl --location 'http://localhost:3000/api/akrab-products' \
+  --header 'x-api-key: YOUR_API_KEY_HERE'
+```
+
+**Response sukses (200)**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "code": "AKRAB001",
+      "name": "Akrab Product",
+      "price": 12000,
+      "stock": 100,
+      "category": "Akrab Anggota",
+      "description": ["Provider source"],
+      "version": 1
+    }
+  ]
+}
+```
+
 ## Panduan Implementasi Frontend (Detail)
 
 ### A) Penyimpanan API key

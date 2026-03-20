@@ -9,6 +9,7 @@ Path Website dipisahkan di prefix **`/api/website/*`**.
 ## Ringkasan Autentikasi
 - `GET /api/website/ping` bersifat public.
 - `GET /api/website/products` wajib access token (Bearer).
+- `GET /api/website/akrab-products` wajib access token (Bearer).
 - Access token didapat dari login Auth API (`/api/auth/login`, `/api/auth/google/login`, atau `/api/auth/verify-mfa`).
 - Access token tervalidasi JWT **dan** cocok dengan cache Redis. Jika tidak cocok, request ditolak.
 
@@ -90,6 +91,46 @@ curl --location 'http://localhost:3000/api/website/products' \
 {
   "success": false,
   "message": "Too many request for products, please try again later"
+}
+```
+
+---
+
+### 3) GET `/api/website/akrab-products`
+Mengambil daftar produk agregasi Akrab untuk channel website.
+
+**Header Wajib**
+- `Authorization: Bearer <ACCESS_TOKEN>`
+
+**Contoh Request**
+```bash
+curl --location 'http://localhost:3000/api/website/akrab-products' \
+  --header 'Authorization: Bearer YOUR_ACCESS_TOKEN'
+```
+
+**Response sukses (200)**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "code": "AKRAB001",
+      "name": "Akrab Product",
+      "price": 12000,
+      "stock": 100,
+      "category": "Akrab Anggota",
+      "description": ["Provider source"],
+      "version": 1
+    }
+  ]
+}
+```
+
+**Response gagal (401) - token invalid/expired**
+```json
+{
+  "success": false,
+  "message": "Invalid access token"
 }
 ```
 

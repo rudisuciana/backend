@@ -69,10 +69,13 @@ test/
 - `GET /health`
 - `GET /api/website/ping`
 - `GET /api/website/products` (Bearer access token)
+- `GET /api/website/akrab-products` (Bearer access token)
 - `GET /api/user/ping`
 - `GET /api/user/profile`
+- `GET /api/akrab-products` (x-api-key user)
 - `POST /api/auth/register`
 - `POST /api/auth/verify-otp`
+- `POST /api/auth/verify-mfa`
 - `POST /api/auth/login`
 - `POST /api/auth/refresh-token`
 - `POST /api/auth/logout`
@@ -80,6 +83,7 @@ test/
 - `POST /api/auth/reset-password`
 - `POST /api/auth/google/register`
 - `POST /api/auth/google/login`
+- `GET /api/auth/me` (Bearer access token)
 - `GET /api/auth/policy` (Bearer access token)
 - `PATCH /api/auth/policy` (Bearer access token)
 - `GET /api/auth/sessions` (Bearer access token)

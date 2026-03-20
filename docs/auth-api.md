@@ -104,7 +104,20 @@ Anda bisa kirim refresh token lewat:
 ```
 
 
-### 4b) POST `/api/auth/verify-mfa`
+**Response 200**
+```json
+{
+  "success": true,
+  "data": {
+    "accessToken": "<NEW_ACCESS_TOKEN>",
+    "refreshToken": "<NEW_REFRESH_TOKEN>"
+  }
+}
+```
+
+---
+
+### 5) POST `/api/auth/verify-mfa`
 Verifikasi OTP MFA setelah login mengembalikan status `202`.
 
 **Body Request**
@@ -126,19 +139,7 @@ Verifikasi OTP MFA setelah login mengembalikan status `202`.
 }
 ```
 
-**Response 200**
-```json
-{
-  "success": true,
-  "data": {
-    "accessToken": "<NEW_ACCESS_TOKEN>",
-    "refreshToken": "<NEW_REFRESH_TOKEN>"
-  }
-}
-```
-
-
-### 5) POST `/api/auth/logout`
+### 6) POST `/api/auth/logout`
 Logout user dengan menghapus sesi refresh token di server (refresh hash + refresh expiry di database akan dikosongkan).
 
 Anda bisa kirim refresh token lewat body atau cookie `refresh_token` (mode cookie wajib `x-csrf-token`).
@@ -158,7 +159,7 @@ Anda bisa kirim refresh token lewat body atau cookie `refresh_token` (mode cooki
 }
 ```
 
-### 6) POST `/api/auth/forgot-password`
+### 7) POST `/api/auth/forgot-password`
 Kirim OTP reset password ke email user (jika email terdaftar).
 
 **Body Request**
@@ -176,7 +177,7 @@ Kirim OTP reset password ke email user (jika email terdaftar).
 }
 ```
 
-### 7) POST `/api/auth/reset-password`
+### 8) POST `/api/auth/reset-password`
 Reset password menggunakan OTP email.
 
 **Body Request**
@@ -196,7 +197,7 @@ Reset password menggunakan OTP email.
 }
 ```
 
-### 8) POST `/api/auth/google/register`
+### 9) POST `/api/auth/google/register`
 Registrasi menggunakan Google ID token (akun Gmail).
 
 **Body Request**
@@ -218,7 +219,7 @@ Registrasi menggunakan Google ID token (akun Gmail).
 }
 ```
 
-### 9) POST `/api/auth/google/login`
+### 10) POST `/api/auth/google/login`
 Login menggunakan Google ID token.
 
 **Body Request**
@@ -239,7 +240,7 @@ Login menggunakan Google ID token.
 }
 ```
 
-### 10) GET `/api/auth/policy`
+### 11) GET `/api/auth/policy`
 Mengambil kebijakan autentikasi user login saat ini.
 
 Header:
@@ -256,7 +257,7 @@ Header:
 }
 ```
 
-### 11) GET `/api/auth/me`
+### 12) GET `/api/auth/me`
 Menampilkan informasi user login saat ini setelah berhasil login.
 
 Header:
@@ -281,7 +282,7 @@ Header:
 }
 ```
 
-### 12) PATCH `/api/auth/policy`
+### 13) PATCH `/api/auth/policy`
 Memperbarui kebijakan autentikasi user login saat ini.
 
 Header:
@@ -310,7 +311,7 @@ Catatan:
 }
 ```
 
-### 13) GET `/api/auth/sessions`
+### 14) GET `/api/auth/sessions`
 Menampilkan sesi refresh aktif user login saat ini.
 
 Header:
@@ -331,7 +332,7 @@ Header:
 }
 ```
 
-### 14) DELETE `/api/auth/sessions/:sessionId`
+### 15) DELETE `/api/auth/sessions/:sessionId`
 Mencabut satu sesi refresh aktif berdasarkan `sessionId`.
 
 Header:
@@ -345,7 +346,7 @@ Header:
 }
 ```
 
-### 15) GET `/api/auth/security-logs`
+### 16) GET `/api/auth/security-logs`
 Mengambil log keamanan autentikasi milik user login saat ini.
 
 Header:
