@@ -10,7 +10,7 @@ vi.mock('../src/modules/providers/khfy/products', () => ({
   getKhfyProducts: vi.fn()
 }));
 
-import { listAkrabProducts } from '../src/modules/akrab';
+import { listAkrabProducts } from '../src/modules/providers/akrab';
 import { getFlazdataProducts } from '../src/modules/providers/flazdata/products';
 import { getKajeProducts } from '../src/modules/providers/kaje/products';
 import { getKhfyProducts } from '../src/modules/providers/khfy/products';

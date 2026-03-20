@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authRouter } from '../modules/auth/auth.route';
 import { requireApiKey } from '../middlewares/apiKey.middleware';
-import { listAkrabProducts } from '../modules/akrab';
+import { listAkrabProducts } from '../modules/providers/akrab';
 import { userRouter } from '../modules/user/user.route';
 import { websiteRouter } from '../modules/website/website.route';
 

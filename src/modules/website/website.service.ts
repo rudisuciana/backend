@@ -1,5 +1,5 @@
 import { WebsiteRepository, type PPOBProduct } from './website.repository';
-import { listAkrabProducts, type AkrabProduct } from '../akrab';
+import { listAkrabProducts, type AkrabProduct } from '../providers/akrab';
 
 export class WebsiteService {
   constructor(private readonly websiteRepository: WebsiteRepository) {}

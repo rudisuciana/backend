@@ -1,6 +1,6 @@
-import { getFlazdataProducts } from './providers/flazdata/products';
-import { getKajeProducts } from './providers/kaje/products';
-import { getKhfyProducts } from './providers/khfy/products';
+import { getFlazdataProducts } from '../flazdata/products';
+import { getKajeProducts } from '../kaje/products';
+import { getKhfyProducts } from '../khfy/products';
 
 export interface AkrabProduct {
   code: string;
@@ -23,6 +23,7 @@ const toAkrabProduct = (product: AkrabProduct): AkrabProduct => ({
 });
 
 export const listAkrabProducts = async (): Promise<AkrabProduct[]> => {
+  // Tetap lanjut walau salah satu provider gagal agar endpoint tetap responsif.
   const results = await Promise.allSettled([getFlazdataProducts(), getKajeProducts(), getKhfyProducts()]);
 
   return results.flatMap((result) => {
