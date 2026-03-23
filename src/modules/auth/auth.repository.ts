@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { logger } from '../../config/logger';
 import type { AuthPolicy, AuthSecurityLog, AuthSession, AuthUser } from './auth.types';
 
 const ACCOUNT_LOCK_THRESHOLD = 5;
@@ -83,6 +84,15 @@ const toAuthUser = (row: AuthUserRow): AuthUser => ({
 
 export class AuthRepository {
   constructor(private readonly mysqlPool: Pool) {}
+
+  private isMissingTableError(error: unknown): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as { code?: string }).code === 'ER_NO_SUCH_TABLE'
+    );
+  }
 
   async createUser(input: CreateUserInput): Promise<AuthUser> {
     const apikey = randomUUID();
@@ -292,20 +302,36 @@ export class AuthRepository {
       return;
     }
 
-    await this.mysqlPool.execute(
-      `INSERT INTO user_sessions (user_id, refresh_token_hash, refresh_token_expired)
-       VALUES (?, ?, ?)`,
-      [userId, refreshTokenHash, refreshTokenExpired]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `INSERT INTO user_sessions (user_id, refresh_token_hash, refresh_token_expired)
+         VALUES (?, ?, ?)`,
+        [userId, refreshTokenHash, refreshTokenExpired]
+      );
+    } catch (error) {
+      if (this.isMissingTableError(error)) {
+        logger.warn({ userId }, 'user_sessions table missing, skip session persistence');
+        return;
+      }
+      throw error;
+    }
   }
 
   async revokeActiveSessions(userId: number): Promise<void> {
-    await this.mysqlPool.execute(
-      `UPDATE user_sessions
-       SET revoked_at = CURRENT_TIMESTAMP
-       WHERE user_id = ? AND revoked_at IS NULL`,
-      [userId]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `UPDATE user_sessions
+         SET revoked_at = CURRENT_TIMESTAMP
+         WHERE user_id = ? AND revoked_at IS NULL`,
+        [userId]
+      );
+    } catch (error) {
+      if (this.isMissingTableError(error)) {
+        logger.warn({ userId }, 'user_sessions table missing, skip session revoke');
+        return;
+      }
+      throw error;
+    }
   }
 
   async getActiveSessionsByUserId(userId: number): Promise<AuthSession[]> {
@@ -358,11 +384,19 @@ export class AuthRepository {
   }
 
   async createSecurityLog(userId: number | null, event: string, metadata?: string): Promise<void> {
-    await this.mysqlPool.execute(
-      `INSERT INTO auth_security_logs (user_id, event, metadata)
-       VALUES (?, ?, ?)`,
-      [userId, event, metadata ?? null]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `INSERT INTO auth_security_logs (user_id, event, metadata)
+         VALUES (?, ?, ?)`,
+        [userId, event, metadata ?? null]
+      );
+    } catch (error) {
+      if (this.isMissingTableError(error)) {
+        logger.warn({ userId, event }, 'auth_security_logs table missing, skip security logging');
+        return;
+      }
+      throw error;
+    }
   }
 
   async updatePasswordHash(userId: number, passwordHash: string): Promise<void> {
