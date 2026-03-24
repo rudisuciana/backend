@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
+import { env } from '../../config/env';
 import { AuthService } from './auth.service';
 
 const passwordSchema = z
@@ -186,7 +187,7 @@ export class AuthController {
   }
 
   private setAuthCookies(res: Response, refreshToken: string): void {
-    const isProduction = process.env.NODE_ENV === 'production';
+    const isProduction = env.nodeEnv === 'production';
     const csrfToken = randomUUID();
     const refreshCookieMaxAgeMs = this.getRefreshTokenMaxAgeMs(refreshToken);
 
@@ -207,7 +208,7 @@ export class AuthController {
   }
 
   private clearAuthCookies(res: Response): void {
-    const isProduction = process.env.NODE_ENV === 'production';
+    const isProduction = env.nodeEnv === 'production';
 
     res.clearCookie(this.refreshCookieName, {
       httpOnly: true,

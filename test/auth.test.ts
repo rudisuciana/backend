@@ -1,13 +1,22 @@
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 
 process.env.NODE_ENV = 'test';
+process.env.ALLOWED_EMAIL_DOMAINS = 'gmail.com';
 
 import { createApp } from '../src/app';
+import { env } from '../src/config/env';
 
 const app = createApp();
 
 describe('Auth API validation', () => {
+  beforeAll(() => {
+    env.auth.allowedEmailDomains = ['gmail.com'];
+  });
+
+  afterAll(() => {
+    env.auth.allowedEmailDomains = [];
+  });
   it('should validate register payload', async () => {
     const response = await request(app).post('/api/auth/register').send({});
 

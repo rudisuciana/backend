@@ -1,10 +1,21 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { env } from '../src/config/env';
 import { AuthService } from '../src/modules/auth/auth.service';
 
 describe('AuthService Gmail restriction', () => {
+  let originalAllowedDomains: string[];
+
+  beforeEach(() => {
+    originalAllowedDomains = [...env.auth.allowedEmailDomains];
+    env.auth.allowedEmailDomains = ['gmail.com'];
+  });
+
+  afterEach(() => {
+    env.auth.allowedEmailDomains = originalAllowedDomains;
+  });
+
   it('should reject manual registration for non-gmail email', async () => {
     const authRepository = {
       getUserByEmail: vi.fn(),

@@ -31,7 +31,11 @@ export class WebsiteRepository {
     const cached = await this.redisClient.get(cacheKey);
 
     if (cached) {
-      return JSON.parse(cached) as PPOBProduct[];
+      try {
+        return JSON.parse(cached) as PPOBProduct[];
+      } catch {
+        await this.redisClient.del(cacheKey);
+      }
     }
 
     const [rows] = await this.mysqlPool.query<ProductRow[]>(

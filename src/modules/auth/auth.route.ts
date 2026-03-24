@@ -21,7 +21,7 @@ const authRateLimiter = rateLimit({
   limit: 20,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
-  passOnStoreError: true,
+  passOnStoreError: false,
   ...(isTest
     ? {}
     : {

@@ -20,7 +20,7 @@ const userRateLimiter = rateLimit({
   limit: 60,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
-  passOnStoreError: true,
+  passOnStoreError: false,
   ...(isTest
     ? {}
     : {

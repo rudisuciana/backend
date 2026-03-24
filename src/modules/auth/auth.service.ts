@@ -440,6 +440,11 @@ export class AuthService {
 
   async loginWithGoogle(input: GoogleAuthInput): Promise<AuthTokens> {
     const profile = await this.verifyGoogleIdToken(input.idToken);
+
+    if (!isAllowedEmail(profile.email)) {
+      throw new Error('EMAIL_DOMAIN_NOT_ALLOWED');
+    }
+
     const byGoogleId = await this.authRepository.getUserByGoogleId(profile.googleId);
     if (byGoogleId) {
       return this.issueAndStoreTokens(byGoogleId);
