@@ -551,10 +551,15 @@ export class AuthService {
       ].join('\r\n')
     );
 
-    await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: { raw: rawMessage }
-    });
+    try {
+      await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: { raw: rawMessage }
+      });
+    } catch (error) {
+      logger.error({ to, error }, 'Failed to send OTP email via Gmail API');
+      throw new Error('EMAIL_SEND_FAILED');
+    }
   }
 
   private async verifyGoogleIdToken(idToken: string): Promise<{
