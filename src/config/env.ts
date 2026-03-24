@@ -1,0 +1,92 @@
+import { config } from 'dotenv';
+
+config();
+
+const toNumber = (value: string | undefined, fallback: number): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+// Expected format for key rings:
+// ACCESS_TOKEN_SECRETS="v1:secret1,v2:secret2"
+// REFRESH_TOKEN_SECRETS="v1:secret1,v2:secret2"
+const toKeyRing = (value: string | undefined): Record<string, string> => {
+  if (!value) {
+    return {};
+  }
+
+  return value
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .reduce<Record<string, string>>((accumulator, part) => {
+      const separatorIndex = part.indexOf(':');
+      if (separatorIndex <= 0) {
+        return accumulator;
+      }
+      const kid = part.slice(0, separatorIndex).trim();
+      const secret = part.slice(separatorIndex + 1).trim();
+      if (!kid || !secret) {
+        return accumulator;
+      }
+      accumulator[kid] = secret;
+      return accumulator;
+    }, {});
+};
+
+export const env = {
+  nodeEnv: process.env.NODE_ENV ?? 'development',
+  port: toNumber(process.env.PORT, 3000),
+  logLevel: process.env.LOG_LEVEL ?? 'info',
+  cors: {
+    origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000'
+  },
+  mysql: {
+    host: process.env.MYSQL_HOST ?? 'localhost',
+    port: toNumber(process.env.MYSQL_PORT, 3306),
+    user: process.env.MYSQL_USER ?? 'root',
+    password: process.env.MYSQL_PASSWORD ?? 'root',
+    database: process.env.MYSQL_DATABASE ?? 'ppob_blueprint'
+  },
+  redis: {
+    host: process.env.REDIS_HOST ?? 'localhost',
+    port: toNumber(process.env.REDIS_PORT, 6379),
+    password: process.env.REDIS_PASSWORD
+  },
+  auth: {
+    accessTokenSecret: process.env.ACCESS_TOKEN_SECRET ?? 'access-secret-key',
+    refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET ?? 'refresh-secret-key',
+    accessTokenKid: process.env.ACCESS_TOKEN_KID ?? 'v1',
+    refreshTokenKid: process.env.REFRESH_TOKEN_KID ?? 'v1',
+    accessTokenSecrets: toKeyRing(process.env.ACCESS_TOKEN_SECRETS),
+    refreshTokenSecrets: toKeyRing(process.env.REFRESH_TOKEN_SECRETS),
+    accessTokenExpiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN ?? '15m',
+    refreshTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN ?? '7d',
+    otpTtlSeconds: toNumber(process.env.OTP_TTL_SECONDS, 300)
+  },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID ?? '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+    redirectUri: process.env.GOOGLE_REDIRECT_URI ?? '',
+    oauthRefreshToken: process.env.GOOGLE_OAUTH_REFRESH_TOKEN ?? '',
+    senderEmail: process.env.GOOGLE_SENDER_EMAIL ?? ''
+  }
+};
+
+if (env.nodeEnv === 'production') {
+  const configuredSecrets = [
+    env.auth.accessTokenSecret,
+    env.auth.refreshTokenSecret,
+    ...Object.values(env.auth.accessTokenSecrets),
+    ...Object.values(env.auth.refreshTokenSecrets)
+  ];
+  const hasMinimumSecretLength = configuredSecrets.every((secret) => secret.length >= 32);
+
+  if (!hasMinimumSecretLength) {
+    throw new Error(
+      'Production requires ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET with minimum length 32 characters'
+    );
+  }
+}
+
+export const isTest = env.nodeEnv === 'test';
