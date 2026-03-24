@@ -70,7 +70,14 @@ const parseDurationToSeconds = (value: string): number => {
   return amount * multiplier;
 };
 
-const isAllowedGmail = (email: string): boolean => email.toLowerCase().endsWith('@gmail.com');
+const isAllowedEmail = (email: string): boolean => {
+  if (env.auth.allowedEmailDomains.length === 0) {
+    return true;
+  }
+
+  const emailLower = email.toLowerCase();
+  return env.auth.allowedEmailDomains.some(domain => emailLower.endsWith(`@${domain.toLowerCase()}`));
+};
 
 export class AuthService {
   constructor(
@@ -79,7 +86,7 @@ export class AuthService {
   ) {}
 
   async registerManual(input: RegisterInput): Promise<{ userId: number; email: string }> {
-    if (!isAllowedGmail(input.email)) {
+    if (!isAllowedEmail(input.email)) {
       throw new Error('EMAIL_DOMAIN_NOT_ALLOWED');
     }
 
@@ -109,15 +116,21 @@ export class AuthService {
     });
 
     const otp = this.generateOtp();
-    await this.redisClient.set(this.registrationOtpKey(input.email), otp, 'EX', env.auth.otpTtlSeconds);
+    const otpHash = await bcrypt.hash(otp, 10);
+    await this.redisClient.set(this.registrationOtpKey(input.email), otpHash, 'EX', env.auth.otpTtlSeconds);
     await this.sendOtpEmail(input.email, otp, 'Verifikasi OTP Registrasi');
 
     return { userId: user.id, email: user.email };
   }
 
   async verifyRegisterOtp(input: VerifyOtpInput): Promise<void> {
-    const cachedOtp = await this.redisClient.get(this.registrationOtpKey(input.email));
-    if (!cachedOtp || cachedOtp !== input.otp) {
+    const cachedOtpHash = await this.redisClient.get(this.registrationOtpKey(input.email));
+    if (!cachedOtpHash) {
+      throw new Error('INVALID_OTP');
+    }
+
+    const isMatch = await bcrypt.compare(input.otp, cachedOtpHash);
+    if (!isMatch) {
       throw new Error('INVALID_OTP');
     }
 
@@ -369,13 +382,19 @@ export class AuthService {
     }
 
     const otp = this.generateOtp();
-    await this.redisClient.set(this.forgotOtpKey(input.email), otp, 'EX', env.auth.otpTtlSeconds);
+    const otpHash = await bcrypt.hash(otp, 10);
+    await this.redisClient.set(this.forgotOtpKey(input.email), otpHash, 'EX', env.auth.otpTtlSeconds);
     await this.sendOtpEmail(input.email, otp, 'OTP Reset Password');
   }
 
   async resetPassword(input: ResetPasswordInput): Promise<void> {
-    const cachedOtp = await this.redisClient.get(this.forgotOtpKey(input.email));
-    if (!cachedOtp || cachedOtp !== input.otp) {
+    const cachedOtpHash = await this.redisClient.get(this.forgotOtpKey(input.email));
+    if (!cachedOtpHash) {
+      throw new Error('INVALID_OTP');
+    }
+
+    const isMatch = await bcrypt.compare(input.otp, cachedOtpHash);
+    if (!isMatch) {
       throw new Error('INVALID_OTP');
     }
 
@@ -392,7 +411,7 @@ export class AuthService {
 
   async registerWithGoogle(input: GoogleAuthInput): Promise<AuthTokens> {
     const profile = await this.verifyGoogleIdToken(input.idToken);
-    if (!isAllowedGmail(profile.email)) {
+    if (!isAllowedEmail(profile.email)) {
       throw new Error('EMAIL_DOMAIN_NOT_ALLOWED');
     }
 

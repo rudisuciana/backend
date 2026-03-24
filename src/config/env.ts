@@ -62,7 +62,8 @@ export const env = {
     refreshTokenSecrets: toKeyRing(process.env.REFRESH_TOKEN_SECRETS),
     accessTokenExpiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN ?? '15m',
     refreshTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN ?? '7d',
-    otpTtlSeconds: toNumber(process.env.OTP_TTL_SECONDS, 300)
+    otpTtlSeconds: toNumber(process.env.OTP_TTL_SECONDS, 300),
+    allowedEmailDomains: process.env.ALLOWED_EMAIL_DOMAINS?.split(',').map(d => d.trim()).filter(Boolean) ?? []
   },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID ?? '',
@@ -85,6 +86,21 @@ if (env.nodeEnv === 'production') {
   if (!hasMinimumSecretLength) {
     throw new Error(
       'Production requires ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET with minimum length 32 characters'
+    );
+  }
+}
+
+if (env.nodeEnv !== 'production' && env.nodeEnv !== 'test') {
+  const isUsingWeakDefaults =
+    env.auth.accessTokenSecret === 'access-secret-key' ||
+    env.auth.accessTokenSecret === 'secret' ||
+    env.auth.refreshTokenSecret === 'refresh-secret-key' ||
+    env.auth.refreshTokenSecret === 'secret';
+
+  if (isUsingWeakDefaults) {
+    console.warn(
+      '⚠️  WARNING: Using weak default JWT secrets. These are INSECURE and should only be used for development/testing. ' +
+        'Set strong ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET in .env file (minimum 32 characters).'
     );
   }
 }

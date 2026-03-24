@@ -4,15 +4,20 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { AuthService } from './auth.service';
 
+const passwordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .max(120, 'Password must be at most 120 characters')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[0-9]/, 'Password must contain at least one number')
+  .regex(/[^a-zA-Z0-9]/, 'Password must contain at least one special character');
+
 const registerSchema = z.object({
   username: z.string().trim().min(3).max(60),
-  email: z
-    .string()
-    .trim()
-    .email()
-    .refine((value) => value.toLowerCase().endsWith('@gmail.com')),
+  email: z.string().trim().email(),
   phone: z.string().trim().min(8).max(20),
-  password: z.string().min(8).max(120)
+  password: passwordSchema
 });
 
 const loginSchema = z.object({
@@ -33,7 +38,7 @@ const forgotPasswordSchema = z.object({
 const resetPasswordSchema = z.object({
   email: z.string().trim().email(),
   otp: z.string().trim().regex(/^\d{6}$/),
-  newPassword: z.string().min(8).max(120)
+  newPassword: passwordSchema
 });
 
 const refreshSchema = z.object({
