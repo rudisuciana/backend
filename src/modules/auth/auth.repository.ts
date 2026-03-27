@@ -325,52 +325,76 @@ export class AuthRepository {
   }
 
   async getActiveSessionsByUserId(userId: number): Promise<AuthSession[]> {
-    const [rows] = await this.mysqlPool.query<SessionRow[]>(
-      `SELECT id, refresh_token_expired, user_agent, ip_address, created_at
-       FROM user_sessions
-       WHERE user_id = ? AND revoked_at IS NULL AND refresh_token_expired > CURRENT_TIMESTAMP
-       ORDER BY created_at DESC`,
-      [userId]
-    );
+    try {
+      const [rows] = await this.mysqlPool.query<SessionRow[]>(
+        `SELECT id, refresh_token_expired, user_agent, ip_address, created_at
+         FROM user_sessions
+         WHERE user_id = ? AND revoked_at IS NULL AND refresh_token_expired > CURRENT_TIMESTAMP
+         ORDER BY created_at DESC`,
+        [userId]
+      );
 
-    return rows.map((row) => ({
-      id: row.id,
-      refreshTokenExpired: row.refresh_token_expired,
-      userAgent: row.user_agent,
-      ipAddress: row.ip_address,
-      createdAt: row.created_at
-    }));
+      return rows.map((row) => ({
+        id: row.id,
+        refreshTokenExpired: row.refresh_token_expired,
+        userAgent: row.user_agent,
+        ipAddress: row.ip_address,
+        createdAt: row.created_at
+      }));
+    } catch (error: unknown) {
+      // Tolerate missing table to avoid breaking auth flow during partial migrations
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ER_NO_SUCH_TABLE') {
+        return [];
+      }
+      throw error;
+    }
   }
 
   async revokeSessionById(userId: number, sessionId: number): Promise<boolean> {
-    const [result] = await this.mysqlPool.execute<ResultSetHeader>(
-      `UPDATE user_sessions
-       SET revoked_at = CURRENT_TIMESTAMP
-       WHERE id = ? AND user_id = ? AND revoked_at IS NULL`,
-      [sessionId, userId]
-    );
+    try {
+      const [result] = await this.mysqlPool.execute<ResultSetHeader>(
+        `UPDATE user_sessions
+         SET revoked_at = CURRENT_TIMESTAMP
+         WHERE id = ? AND user_id = ? AND revoked_at IS NULL`,
+        [sessionId, userId]
+      );
 
-    return result.affectedRows > 0;
+      return result.affectedRows > 0;
+    } catch (error: unknown) {
+      // Tolerate missing table to avoid breaking auth flow during partial migrations
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ER_NO_SUCH_TABLE') {
+        return false;
+      }
+      throw error;
+    }
   }
 
   async getSecurityLogsByUserId(userId: number, limit: number): Promise<AuthSecurityLog[]> {
-    const [rows] = await this.mysqlPool.query<SecurityLogRow[]>(
-      `SELECT id, event, ip_address, user_agent, metadata, created_at
-       FROM auth_security_logs
-       WHERE user_id = ?
-       ORDER BY created_at DESC
-       LIMIT ?`,
-      [userId, limit]
-    );
+    try {
+      const [rows] = await this.mysqlPool.query<SecurityLogRow[]>(
+        `SELECT id, event, ip_address, user_agent, metadata, created_at
+         FROM auth_security_logs
+         WHERE user_id = ?
+         ORDER BY created_at DESC
+         LIMIT ?`,
+        [userId, limit]
+      );
 
-    return rows.map((row) => ({
-      id: row.id,
-      event: row.event,
-      ipAddress: row.ip_address,
-      userAgent: row.user_agent,
-      metadata: row.metadata,
-      createdAt: row.created_at
-    }));
+      return rows.map((row) => ({
+        id: row.id,
+        event: row.event,
+        ipAddress: row.ip_address,
+        userAgent: row.user_agent,
+        metadata: row.metadata,
+        createdAt: row.created_at
+      }));
+    } catch (error: unknown) {
+      // Tolerate missing table to avoid breaking auth flow during partial migrations
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ER_NO_SUCH_TABLE') {
+        return [];
+      }
+      throw error;
+    }
   }
 
   async createSecurityLog(userId: number | null, event: string, metadata?: string): Promise<void> {
