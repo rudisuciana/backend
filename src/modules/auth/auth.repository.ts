@@ -292,20 +292,36 @@ export class AuthRepository {
       return;
     }
 
-    await this.mysqlPool.execute(
-      `INSERT INTO user_sessions (user_id, refresh_token_hash, refresh_token_expired)
-       VALUES (?, ?, ?)`,
-      [userId, refreshTokenHash, refreshTokenExpired]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `INSERT INTO user_sessions (user_id, refresh_token_hash, refresh_token_expired)
+         VALUES (?, ?, ?)`,
+        [userId, refreshTokenHash, refreshTokenExpired]
+      );
+    } catch (error: unknown) {
+      // Tolerate missing table to avoid breaking auth flow during partial migrations
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ER_NO_SUCH_TABLE') {
+        return;
+      }
+      throw error;
+    }
   }
 
   async revokeActiveSessions(userId: number): Promise<void> {
-    await this.mysqlPool.execute(
-      `UPDATE user_sessions
-       SET revoked_at = CURRENT_TIMESTAMP
-       WHERE user_id = ? AND revoked_at IS NULL`,
-      [userId]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `UPDATE user_sessions
+         SET revoked_at = CURRENT_TIMESTAMP
+         WHERE user_id = ? AND revoked_at IS NULL`,
+        [userId]
+      );
+    } catch (error: unknown) {
+      // Tolerate missing table to avoid breaking auth flow during partial migrations
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ER_NO_SUCH_TABLE') {
+        return;
+      }
+      throw error;
+    }
   }
 
   async getActiveSessionsByUserId(userId: number): Promise<AuthSession[]> {
@@ -358,11 +374,19 @@ export class AuthRepository {
   }
 
   async createSecurityLog(userId: number | null, event: string, metadata?: string): Promise<void> {
-    await this.mysqlPool.execute(
-      `INSERT INTO auth_security_logs (user_id, event, metadata)
-       VALUES (?, ?, ?)`,
-      [userId, event, metadata ?? null]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `INSERT INTO auth_security_logs (user_id, event, metadata)
+         VALUES (?, ?, ?)`,
+        [userId, event, metadata ?? null]
+      );
+    } catch (error: unknown) {
+      // Tolerate missing table to avoid breaking auth flow during partial migrations
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ER_NO_SUCH_TABLE') {
+        return;
+      }
+      throw error;
+    }
   }
 
   async updatePasswordHash(userId: number, passwordHash: string): Promise<void> {

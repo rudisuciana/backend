@@ -345,11 +345,16 @@ export class AuthController {
       return;
     }
 
-    await this.authService.forgotPassword(parsed.data);
-    res.json({
-      success: true,
-      message: 'If email exists, OTP reset password has been sent'
-    });
+    try {
+      await this.authService.forgotPassword(parsed.data);
+      res.json({
+        success: true,
+        message: 'If email exists, OTP reset password has been sent'
+      });
+    } catch (error) {
+      const mapped = mapAuthError(error);
+      res.status(mapped.status).json({ success: false, message: mapped.message });
+    }
   };
 
   resetPassword = async (req: Request, res: Response): Promise<void> => {
