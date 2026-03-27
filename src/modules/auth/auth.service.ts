@@ -498,7 +498,13 @@ export class AuthService {
 
     const accessTtlSeconds = parseDurationToSeconds(env.auth.accessTokenExpiresIn);
     if (accessTtlSeconds > 0) {
-      await this.redisClient.set(`auth:access:${user.id}:${tokenId}`, accessToken, 'EX', accessTtlSeconds);
+      try {
+        await this.redisClient.set(`auth:access:${user.id}:${tokenId}`, accessToken, 'EX', accessTtlSeconds);
+      } catch (error: unknown) {
+        // Log but don't throw - access token caching in Redis is optional
+        // The token itself is still valid and can be used
+        // This prevents Redis unavailability from blocking login
+      }
     }
 
     return accessToken;

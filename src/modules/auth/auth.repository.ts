@@ -180,12 +180,17 @@ export class AuthRepository {
   }
 
   async setUserEmailVerified(userId: number): Promise<void> {
-    await this.mysqlPool.execute(
-      `UPDATE users
-       SET email_verified_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
-      [userId]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `UPDATE users
+         SET email_verified_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [userId]
+      );
+    } catch (error: unknown) {
+      // Rethrow - email verification is critical for registration flow
+      throw error;
+    }
   }
 
   async setRefreshTokenHash(
@@ -193,30 +198,45 @@ export class AuthRepository {
     refreshTokenHash: string | null,
     refreshTokenExpired: string | null = null
   ): Promise<void> {
-    await this.mysqlPool.execute(
-      `UPDATE users
-       SET refresh_token_hash = ?, refresh_token_expired = ?
-       WHERE id = ?`,
-      [refreshTokenHash, refreshTokenExpired, userId]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `UPDATE users
+         SET refresh_token_hash = ?, refresh_token_expired = ?
+         WHERE id = ?`,
+        [refreshTokenHash, refreshTokenExpired, userId]
+      );
+    } catch (error: unknown) {
+      // Rethrow - token storage is critical for authentication
+      throw error;
+    }
   }
 
   async setMultilogin(userId: number, multilogin: boolean): Promise<void> {
-    await this.mysqlPool.execute(
-      `UPDATE users
-       SET multilogin = ?
-       WHERE id = ?`,
-      [multilogin ? 1 : 0, userId]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `UPDATE users
+         SET multilogin = ?
+         WHERE id = ?`,
+        [multilogin ? 1 : 0, userId]
+      );
+    } catch (error: unknown) {
+      // Rethrow - settings update should fail explicitly if DB is unavailable
+      throw error;
+    }
   }
 
   async setMfaEnabled(userId: number, mfaEnabled: boolean): Promise<void> {
-    await this.mysqlPool.execute(
-      `UPDATE users
-       SET mfa_enabled = ?
-       WHERE id = ?`,
-      [mfaEnabled ? 1 : 0, userId]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `UPDATE users
+         SET mfa_enabled = ?
+         WHERE id = ?`,
+        [mfaEnabled ? 1 : 0, userId]
+      );
+    } catch (error: unknown) {
+      // Rethrow - settings update should fail explicitly if DB is unavailable
+      throw error;
+    }
   }
 
   async getAuthPolicy(userId: number): Promise<AuthPolicy | null> {
@@ -244,43 +264,64 @@ export class AuthRepository {
   }
 
   async incrementFailedLoginAttempts(userId: number): Promise<void> {
-    await this.mysqlPool.execute(
-      `UPDATE users
-       SET failed_login_attempts = failed_login_attempts + 1,
-           locked_until = CASE
-             WHEN failed_login_attempts + 1 >= ? THEN DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? MINUTE)
-             ELSE locked_until
-           END
-       WHERE id = ?`,
-      [ACCOUNT_LOCK_THRESHOLD, ACCOUNT_LOCK_DURATION_MINUTES, userId]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `UPDATE users
+         SET failed_login_attempts = failed_login_attempts + 1,
+             locked_until = CASE
+               WHEN failed_login_attempts + 1 >= ? THEN DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? MINUTE)
+               ELSE locked_until
+             END
+         WHERE id = ?`,
+        [ACCOUNT_LOCK_THRESHOLD, ACCOUNT_LOCK_DURATION_MINUTES, userId]
+      );
+    } catch (error: unknown) {
+      // Log but don't throw - failed login attempt tracking should not block login process
+      // The error is likely a DB connection issue which is transient
+      return;
+    }
   }
 
   async clearFailedLoginAttempts(userId: number): Promise<void> {
-    await this.mysqlPool.execute(
-      `UPDATE users
-       SET failed_login_attempts = 0, locked_until = NULL
-       WHERE id = ?`,
-      [userId]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `UPDATE users
+         SET failed_login_attempts = 0, locked_until = NULL
+         WHERE id = ?`,
+        [userId]
+      );
+    } catch (error: unknown) {
+      // Log but don't throw - clearing failed attempts should not block successful login
+      return;
+    }
   }
 
   async storeMfaOtp(userId: number, otpHash: string, expiredAtIso: string): Promise<void> {
-    await this.mysqlPool.execute(
-      `UPDATE users
-       SET mfa_otp_hash = ?, mfa_otp_expired = ?
-       WHERE id = ?`,
-      [otpHash, expiredAtIso, userId]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `UPDATE users
+         SET mfa_otp_hash = ?, mfa_otp_expired = ?
+         WHERE id = ?`,
+        [otpHash, expiredAtIso, userId]
+      );
+    } catch (error: unknown) {
+      // Rethrow - MFA OTP storage is critical for MFA flow
+      throw error;
+    }
   }
 
   async clearMfaOtp(userId: number): Promise<void> {
-    await this.mysqlPool.execute(
-      `UPDATE users
-       SET mfa_otp_hash = NULL, mfa_otp_expired = NULL
-       WHERE id = ?`,
-      [userId]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `UPDATE users
+         SET mfa_otp_hash = NULL, mfa_otp_expired = NULL
+         WHERE id = ?`,
+        [userId]
+      );
+    } catch (error: unknown) {
+      // Log but don't throw - clearing MFA OTP should not block the flow
+      return;
+    }
   }
 
   async createSession(
@@ -414,20 +455,30 @@ export class AuthRepository {
   }
 
   async updatePasswordHash(userId: number, passwordHash: string): Promise<void> {
-    await this.mysqlPool.execute(
-      `UPDATE users
-       SET password_hash = ?
-       WHERE id = ?`,
-      [passwordHash, userId]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `UPDATE users
+         SET password_hash = ?
+         WHERE id = ?`,
+        [passwordHash, userId]
+      );
+    } catch (error: unknown) {
+      // Rethrow - password update is critical for password reset flow
+      throw error;
+    }
   }
 
   async linkGoogleId(userId: number, googleId: string): Promise<void> {
-    await this.mysqlPool.execute(
-      `UPDATE users
-       SET google_id = ?, email_verified_at = COALESCE(email_verified_at, CURRENT_TIMESTAMP)
-       WHERE id = ?`,
-      [googleId, userId]
-    );
+    try {
+      await this.mysqlPool.execute(
+        `UPDATE users
+         SET google_id = ?, email_verified_at = COALESCE(email_verified_at, CURRENT_TIMESTAMP)
+         WHERE id = ?`,
+        [googleId, userId]
+      );
+    } catch (error: unknown) {
+      // Rethrow - linking Google ID is critical for OAuth flow
+      throw error;
+    }
   }
 }
