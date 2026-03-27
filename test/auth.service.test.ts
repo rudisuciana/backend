@@ -69,6 +69,7 @@ describe('AuthService Gmail restriction', () => {
   it('should store issued access token in redis with ttl', async () => {
     const authRepository = {
       setRefreshTokenHash: vi.fn(),
+      setRefreshTokenAndCreateSession: vi.fn(),
       createSession: vi.fn()
     };
     const redisClient = {
@@ -98,8 +99,8 @@ describe('AuthService Gmail restriction', () => {
 
     expect(tokens.accessToken).toBeTypeOf('string');
     expect(tokens.refreshToken).toBeTypeOf('string');
-    expect(authRepository.setRefreshTokenHash).toHaveBeenCalledOnce();
-    expect(authRepository.setRefreshTokenHash.mock.calls[0][2]).toBeTypeOf('string');
+    expect(authRepository.setRefreshTokenAndCreateSession).toHaveBeenCalledOnce();
+    expect(authRepository.setRefreshTokenAndCreateSession.mock.calls[0][2]).toBeTypeOf('string');
     expect(redisClient.set).toHaveBeenCalledOnce();
     expect(redisClient.set.mock.calls[0][0]).toMatch(/^auth:access:9:/);
     expect(redisClient.set.mock.calls[0][2]).toBe('EX');
@@ -109,6 +110,7 @@ describe('AuthService Gmail restriction', () => {
   it('should issue access token 15m and refresh token 7d by default', async () => {
     const authRepository = {
       setRefreshTokenHash: vi.fn(),
+      setRefreshTokenAndCreateSession: vi.fn(),
       createSession: vi.fn()
     };
     const redisClient = {
@@ -179,6 +181,7 @@ describe('AuthService Gmail restriction', () => {
         status: 'active'
       }),
       setRefreshTokenHash: vi.fn(),
+      setRefreshTokenAndCreateSession: vi.fn(),
       createSession: vi.fn()
     };
     const redisClient = {
@@ -190,7 +193,7 @@ describe('AuthService Gmail restriction', () => {
 
     expect(refreshed.accessToken).toBeTypeOf('string');
     expect(refreshed.refreshToken).toBeTypeOf('string');
-    expect(authRepository.setRefreshTokenHash).toHaveBeenCalledOnce();
+    expect(authRepository.setRefreshTokenAndCreateSession).toHaveBeenCalledOnce();
     expect(redisClient.set).toHaveBeenCalledOnce();
   });
 

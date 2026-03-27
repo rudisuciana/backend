@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import type { Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { logger } from '../../config/logger';
 import type { AuthPolicy, AuthSecurityLog, AuthSession, AuthUser } from './auth.types';
 
 const ACCOUNT_LOCK_THRESHOLD = 5;
@@ -83,6 +84,27 @@ const toAuthUser = (row: AuthUserRow): AuthUser => ({
 
 export class AuthRepository {
   constructor(private readonly mysqlPool: Pool) {}
+
+  /**
+   * Execute multiple database operations atomically within a transaction.
+   * If any operation fails, all changes are rolled back.
+   */
+  private async withTransaction<T>(
+    callback: (connection: PoolConnection) => Promise<T>
+  ): Promise<T> {
+    const connection = await this.mysqlPool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const result = await callback(connection);
+      await connection.commit();
+      return result;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
 
   async createUser(input: CreateUserInput): Promise<AuthUser> {
     const apikey = randomUUID();
@@ -211,6 +233,37 @@ export class AuthRepository {
     }
   }
 
+  /**
+   * Store refresh token and create session atomically within a transaction.
+   * This ensures consistency between user refresh token and session records.
+   */
+  async setRefreshTokenAndCreateSession(
+    userId: number,
+    refreshTokenHash: string,
+    refreshTokenExpired: string | null
+  ): Promise<void> {
+    if (!refreshTokenExpired) {
+      return;
+    }
+
+    await this.withTransaction(async (connection) => {
+      // Step 1: Set refresh token in users table
+      await connection.execute(
+        `UPDATE users
+         SET refresh_token_hash = ?, refresh_token_expired = ?
+         WHERE id = ?`,
+        [refreshTokenHash, refreshTokenExpired, userId]
+      );
+
+      // Step 2: Create session record
+      await connection.execute(
+        `INSERT INTO user_sessions (user_id, refresh_token_hash, refresh_token_expired)
+         VALUES (?, ?, ?)`,
+        [userId, refreshTokenHash, refreshTokenExpired]
+      );
+    });
+  }
+
   async setMultilogin(userId: number, multilogin: boolean): Promise<void> {
     try {
       await this.mysqlPool.execute(
@@ -259,8 +312,23 @@ export class AuthRepository {
   }
 
   async clearRefreshSessions(userId: number): Promise<void> {
-    await this.setRefreshTokenHash(userId, null, null);
-    await this.revokeActiveSessions(userId);
+    await this.withTransaction(async (connection) => {
+      // Step 1: Clear refresh token in users table
+      await connection.execute(
+        `UPDATE users
+         SET refresh_token_hash = NULL, refresh_token_expired = NULL
+         WHERE id = ?`,
+        [userId]
+      );
+
+      // Step 2: Revoke all active sessions
+      await connection.execute(
+        `UPDATE user_sessions
+         SET revoked_at = CURRENT_TIMESTAMP
+         WHERE user_id = ? AND revoked_at IS NULL`,
+        [userId]
+      );
+    });
   }
 
   async incrementFailedLoginAttempts(userId: number): Promise<void> {
@@ -278,6 +346,7 @@ export class AuthRepository {
     } catch (error: unknown) {
       // Log but don't throw - failed login attempt tracking should not block login process
       // The error is likely a DB connection issue which is transient
+      logger.warn({ userId, error }, 'Failed to increment failed login attempts');
       return;
     }
   }
@@ -292,6 +361,7 @@ export class AuthRepository {
       );
     } catch (error: unknown) {
       // Log but don't throw - clearing failed attempts should not block successful login
+      logger.warn({ userId, error }, 'Failed to clear failed login attempts');
       return;
     }
   }
@@ -319,8 +389,9 @@ export class AuthRepository {
         [userId]
       );
     } catch (error: unknown) {
-      // Log but don't throw - clearing MFA OTP should not block the flow
-      return;
+      // Rethrow - clearing MFA OTP is critical to prevent OTP replay attacks
+      // If we can't clear the OTP, we must fail the operation to maintain security
+      throw error;
     }
   }
 
@@ -466,6 +537,30 @@ export class AuthRepository {
       // Rethrow - password update is critical for password reset flow
       throw error;
     }
+  }
+
+  /**
+   * Update password and clear refresh token atomically within a transaction.
+   * This ensures the user must re-authenticate after password reset.
+   */
+  async updatePasswordAndClearRefreshToken(userId: number, passwordHash: string): Promise<void> {
+    await this.withTransaction(async (connection) => {
+      // Step 1: Update password
+      await connection.execute(
+        `UPDATE users
+         SET password_hash = ?
+         WHERE id = ?`,
+        [passwordHash, userId]
+      );
+
+      // Step 2: Clear refresh token to invalidate all sessions
+      await connection.execute(
+        `UPDATE users
+         SET refresh_token_hash = NULL, refresh_token_expired = NULL
+         WHERE id = ?`,
+        [userId]
+      );
+    });
   }
 
   async linkGoogleId(userId: number, googleId: string): Promise<void> {

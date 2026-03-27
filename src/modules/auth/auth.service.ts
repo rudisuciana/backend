@@ -270,6 +270,11 @@ export class AuthService {
       throw new Error('USER_NOT_FOUND');
     }
 
+    // Validate user status - blocked users cannot update auth policy
+    if (existingUser.status !== 'active') {
+      throw new Error('USER_ACCOUNT_NOT_ACTIVE');
+    }
+
     if (typeof input.multilogin === 'boolean') {
       await this.authRepository.setMultilogin(userId, input.multilogin);
       await this.authRepository.createSecurityLog(
@@ -404,8 +409,9 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(input.newPassword, 10);
-    await this.authRepository.updatePasswordHash(user.id, passwordHash);
-    await this.authRepository.setRefreshTokenHash(user.id, null, null);
+
+    // Use transaction to ensure atomicity between password update and token invalidation
+    await this.authRepository.updatePasswordAndClearRefreshToken(user.id, passwordHash);
     await this.redisClient.del(this.forgotOtpKey(input.email));
   }
 
@@ -479,8 +485,9 @@ export class AuthService {
     const refreshTokenExpired = refreshPayload.exp
       ? new Date(refreshPayload.exp * 1000).toISOString()
       : null;
-    await this.authRepository.setRefreshTokenHash(user.id, refreshHash, refreshTokenExpired);
-    await this.authRepository.createSession(user.id, refreshHash, refreshTokenExpired);
+
+    // Use transaction to ensure atomicity between setting refresh token and creating session
+    await this.authRepository.setRefreshTokenAndCreateSession(user.id, refreshHash, refreshTokenExpired);
 
     return { accessToken, refreshToken };
   }

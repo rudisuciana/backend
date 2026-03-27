@@ -112,6 +112,8 @@ const mapAuthError = (error: unknown): { status: number; message: string } => {
       return { status: 404, message: 'Session not found' };
     case 'EMAIL_SEND_FAILED':
       return { status: 503, message: 'Failed to send email. Please try again later' };
+    case 'USER_ACCOUNT_NOT_ACTIVE':
+      return { status: 403, message: 'Account is not active' };
     default:
       return { status: 500, message: 'Internal server error' };
   }
