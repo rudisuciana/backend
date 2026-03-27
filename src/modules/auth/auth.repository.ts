@@ -246,22 +246,38 @@ export class AuthRepository {
       return;
     }
 
-    await this.withTransaction(async (connection) => {
-      // Step 1: Set refresh token in users table
-      await connection.execute(
-        `UPDATE users
-         SET refresh_token_hash = ?, refresh_token_expired = ?
-         WHERE id = ?`,
-        [refreshTokenHash, refreshTokenExpired, userId]
-      );
+    try {
+      await this.withTransaction(async (connection) => {
+        // Step 1: Set refresh token in users table
+        await connection.execute(
+          `UPDATE users
+           SET refresh_token_hash = ?, refresh_token_expired = ?
+           WHERE id = ?`,
+          [refreshTokenHash, refreshTokenExpired, userId]
+        );
 
-      // Step 2: Create session record
-      await connection.execute(
-        `INSERT INTO user_sessions (user_id, refresh_token_hash, refresh_token_expired)
-         VALUES (?, ?, ?)`,
-        [userId, refreshTokenHash, refreshTokenExpired]
-      );
-    });
+        // Step 2: Create session record
+        await connection.execute(
+          `INSERT INTO user_sessions (user_id, refresh_token_hash, refresh_token_expired)
+           VALUES (?, ?, ?)`,
+          [userId, refreshTokenHash, refreshTokenExpired]
+        );
+      });
+    } catch (error: unknown) {
+      // If user_sessions table doesn't exist, gracefully degrade to only storing in users table
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ER_NO_SUCH_TABLE') {
+        logger.warn({ userId }, 'user_sessions table not found, storing refresh token in users table only');
+        await this.mysqlPool.execute(
+          `UPDATE users
+           SET refresh_token_hash = ?, refresh_token_expired = ?
+           WHERE id = ?`,
+          [refreshTokenHash, refreshTokenExpired, userId]
+        );
+        return;
+      }
+      // Rethrow other errors - login should fail if we cannot store refresh token
+      throw error;
+    }
   }
 
   async setMultilogin(userId: number, multilogin: boolean): Promise<void> {
@@ -312,23 +328,39 @@ export class AuthRepository {
   }
 
   async clearRefreshSessions(userId: number): Promise<void> {
-    await this.withTransaction(async (connection) => {
-      // Step 1: Clear refresh token in users table
-      await connection.execute(
-        `UPDATE users
-         SET refresh_token_hash = NULL, refresh_token_expired = NULL
-         WHERE id = ?`,
-        [userId]
-      );
+    try {
+      await this.withTransaction(async (connection) => {
+        // Step 1: Clear refresh token in users table
+        await connection.execute(
+          `UPDATE users
+           SET refresh_token_hash = NULL, refresh_token_expired = NULL
+           WHERE id = ?`,
+          [userId]
+        );
 
-      // Step 2: Revoke all active sessions
-      await connection.execute(
-        `UPDATE user_sessions
-         SET revoked_at = CURRENT_TIMESTAMP
-         WHERE user_id = ? AND revoked_at IS NULL`,
-        [userId]
-      );
-    });
+        // Step 2: Revoke all active sessions
+        await connection.execute(
+          `UPDATE user_sessions
+           SET revoked_at = CURRENT_TIMESTAMP
+           WHERE user_id = ? AND revoked_at IS NULL`,
+          [userId]
+        );
+      });
+    } catch (error: unknown) {
+      // If user_sessions table doesn't exist, gracefully degrade to only clearing in users table
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ER_NO_SUCH_TABLE') {
+        logger.warn({ userId }, 'user_sessions table not found, clearing refresh token in users table only');
+        await this.mysqlPool.execute(
+          `UPDATE users
+           SET refresh_token_hash = NULL, refresh_token_expired = NULL
+           WHERE id = ?`,
+          [userId]
+        );
+        return;
+      }
+      // Rethrow other errors
+      throw error;
+    }
   }
 
   async incrementFailedLoginAttempts(userId: number): Promise<void> {
