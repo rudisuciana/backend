@@ -483,7 +483,7 @@ export class AuthService {
     const refreshHash = await bcrypt.hash(refreshToken, 10);
     const refreshPayload = jwt.decode(refreshToken) as jwt.JwtPayload;
     const refreshTokenExpired = refreshPayload.exp
-      ? new Date(refreshPayload.exp * 1000).toISOString().slice(0, 19).replace('T', ' ')
+      ? this.formatTimestampForMysql(new Date(refreshPayload.exp * 1000))
       : null;
 
     // Use transaction to ensure atomicity between setting refresh token and creating session
@@ -522,7 +522,14 @@ export class AuthService {
   }
 
   private getOtpExpiredAtIso(): string {
-    return new Date(Date.now() + env.auth.otpTtlSeconds * 1000).toISOString();
+    return this.formatTimestampForMysql(new Date(Date.now() + env.auth.otpTtlSeconds * 1000));
+  }
+
+  private formatTimestampForMysql(date: Date): string {
+    if (!Number.isFinite(date.getTime())) {
+      throw new Error('Invalid date provided for MySQL timestamp formatting');
+    }
+    return date.toISOString().slice(0, 19).replace('T', ' ');
   }
 
   private registrationOtpKey(email: string): string {
