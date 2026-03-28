@@ -74,9 +74,14 @@ Login menggunakan `email` atau `username` + `password`.
 ```json
 {
   "identity": "demouser@gmail.com",
-  "password": "Password123!"
+  "password": "Password123!",
+  "singleSession": false
 }
 ```
+
+Keterangan:
+- `singleSession` bersifat opsional.
+- Jika `singleSession = true`, backend akan mencabut sesi refresh aktif lain milik user sebelum menerbitkan token baru.
 
 **Response 200**
 ```json
@@ -86,6 +91,14 @@ Login menggunakan `email` atau `username` + `password`.
     "accessToken": "<ACCESS_TOKEN>",
     "refreshToken": "<REFRESH_TOKEN>"
   }
+}
+```
+
+**Response 202 (MFA_REQUIRED)**
+```json
+{
+  "success": false,
+  "message": "MFA required. Please verify the OTP sent to your email"
 }
 ```
 

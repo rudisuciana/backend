@@ -72,7 +72,7 @@ test/
 - `GET /api/website/akrab-products` (Bearer access token)
 - `GET /api/user/ping`
 - `GET /api/user/profile`
-- `GET /api/akrab-products` (x-api-key user)
+- `GET /api/akrab-products` (x-api-key user + IP whitelist `users.whitelistip`)
 - `POST /api/auth/register`
 - `POST /api/auth/verify-otp`
 - `POST /api/auth/verify-mfa`

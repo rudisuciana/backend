@@ -160,7 +160,7 @@ paths:
       tags: [User]
       security:
         - ApiKeyAuth: []
-      summary: List aggregated Akrab products for user API key channel
+      summary: List aggregated Akrab products for user API key channel (requires API key and whitelisted IP)
       responses:
         '200':
           description: Akrab product list
@@ -194,6 +194,8 @@ paths:
                           type: number
         '401':
           description: Missing or invalid x-api-key
+        '403':
+          description: IP is not allowed
   /api/user/ping:
     get:
       tags: [User]
@@ -269,6 +271,21 @@ paths:
     post:
       tags: [Auth]
       summary: Login using email or username and password (issues access and refresh token; access token is cached in Redis)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identity, password]
+              properties:
+                identity:
+                  type: string
+                password:
+                  type: string
+                singleSession:
+                  type: boolean
+                  description: Optional. If true, revoke user's other active refresh sessions before issuing new tokens.
       responses:
         '200':
           description: Login successful
@@ -281,6 +298,19 @@ paths:
                     type: boolean
                   data:
                     $ref: '#/components/schemas/AuthTokens'
+        '202':
+          description: MFA challenge required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: MFA required. Please verify the OTP sent to your email
         '401':
           description: Invalid credentials
   /api/auth/refresh-token:
@@ -315,6 +345,8 @@ paths:
       responses:
         '200':
           description: Logout successful
+        '400':
+          description: Invalid logout payload
         '401':
           description: Invalid refresh token
         '403':

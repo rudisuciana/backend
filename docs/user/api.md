@@ -12,6 +12,7 @@ Semua endpoint user wajib:
 - API key harus cocok dengan `users.apikey`.
 - IP request harus ada di whitelist `users.whitelistip` untuk API key tersebut.
 - Jika `whitelistip` berisi banyak IP, pisahkan dengan koma (`,`), contoh: `127.0.0.1,::ffff:127.0.0.1`.
+- `x-api-key` bersifat per-user (dari database `users.apikey`), bukan API key global `.env`.
 
 ## Endpoint
 
