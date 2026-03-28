@@ -28,13 +28,22 @@ export class WebsiteRepository {
 
   async listProducts(): Promise<PPOBProduct[]> {
     const cacheKey = 'ppob:products:all';
-    const cached = await this.redisClient.get(cacheKey);
+    let cached: string | null = null;
+    try {
+      cached = await this.redisClient.get(cacheKey);
+    } catch {
+      cached = null;
+    }
 
     if (cached) {
       try {
         return JSON.parse(cached) as PPOBProduct[];
       } catch {
-        await this.redisClient.del(cacheKey);
+        try {
+          await this.redisClient.del(cacheKey);
+        } catch {
+          // ignore cache delete failures
+        }
       }
     }
 
@@ -54,7 +63,11 @@ export class WebsiteRepository {
       isActive: row.is_active === 1
     }));
 
-    await this.redisClient.set(cacheKey, JSON.stringify(products), 'EX', 60);
+    try {
+      await this.redisClient.set(cacheKey, JSON.stringify(products), 'EX', 60);
+    } catch {
+      // ignore cache set failures
+    }
     return products;
   }
 }
