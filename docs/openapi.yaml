@@ -1,0 +1,463 @@
+openapi: 3.0.3
+info:
+  title: PPOB Backend Blueprint API
+  version: 1.0.0
+  description: API blueprint for website and user channels with Bearer access token (website products) and x-api-key authorization (user routes).
+servers:
+  - url: http://localhost:3000
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+  schemas:
+    WebsiteProduct:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        adminFee:
+          type: number
+        isActive:
+          type: boolean
+    UserProfile:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        balance:
+          type: number
+        status:
+          type: string
+        avatar:
+          type: string
+          nullable: true
+    AuthTokens:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+    AuthMe:
+      type: object
+      properties:
+        username:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        balance:
+          type: number
+        status:
+          type: string
+        avatar:
+          type: string
+          nullable: true
+        emailVerifiedAt:
+          type: string
+          nullable: true
+        mfaEnabled:
+          type: boolean
+        multilogin:
+          type: boolean
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Check service health (MySQL and Redis)
+      responses:
+        '200':
+          description: All services up
+        '503':
+          description: One or more services down
+  /api/website/ping:
+    get:
+      tags: [Website]
+      summary: Basic connectivity test for website client (public)
+      responses:
+        '200':
+          description: Website API reachable
+  /api/website/products:
+    get:
+      tags: [Website]
+      security:
+        - BearerAuth: []
+      summary: List active PPOB products (requires login bearer access token)
+      responses:
+        '200':
+          description: Product list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WebsiteProduct'
+        '401':
+          description: Missing or invalid bearer access token
+  /api/website/akrab-products:
+    get:
+      tags: [Website]
+      security:
+        - BearerAuth: []
+      summary: List aggregated Akrab products for website channel (requires login bearer access token)
+      responses:
+        '200':
+          description: Akrab product list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        name:
+                          type: string
+                        price:
+                          type: number
+                        stock:
+                          type: number
+                        category:
+                          type: string
+                        description:
+                          type: array
+                          items:
+                            type: string
+                        version:
+                          type: number
+        '401':
+          description: Missing or invalid bearer access token
+  /api/akrab-products:
+    get:
+      tags: [User]
+      security:
+        - ApiKeyAuth: []
+      summary: List aggregated Akrab products for user API key channel
+      responses:
+        '200':
+          description: Akrab product list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        name:
+                          type: string
+                        price:
+                          type: number
+                        stock:
+                          type: number
+                        category:
+                          type: string
+                        description:
+                          type: array
+                          items:
+                            type: string
+                        version:
+                          type: number
+        '401':
+          description: Missing or invalid x-api-key
+  /api/user/ping:
+    get:
+      tags: [User]
+      security:
+        - ApiKeyAuth: []
+      summary: Basic connectivity test for user client (requires API key and whitelisted IP)
+      responses:
+        '200':
+          description: User API reachable
+        '403':
+          description: Invalid API key or IP is not allowed
+  /api/user/profile:
+    get:
+      tags: [User]
+      security:
+        - ApiKeyAuth: []
+      summary: Get current user account info by x-api-key and whitelisted IP (for information and transaction preparation)
+      responses:
+        '200':
+          description: User profile found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/UserProfile'
+        '404':
+          description: User not found
+        '403':
+          description: Invalid API key or IP is not allowed
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register manual user with Gmail and send OTP to email
+      responses:
+        '201':
+          description: Registration successful
+        '400':
+          description: Invalid payload
+  /api/auth/verify-otp:
+    post:
+      tags: [Auth]
+      summary: Verify OTP for manual registration
+      responses:
+        '200':
+          description: OTP verified
+        '400':
+          description: Invalid OTP or payload
+  /api/auth/verify-mfa:
+    post:
+      tags: [Auth]
+      summary: Verify MFA OTP after login challenge
+      responses:
+        '200':
+          description: MFA verification successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/AuthTokens'
+        '400':
+          description: Invalid OTP or payload
+        '401':
+          description: Invalid OTP
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login using email or username and password (issues access and refresh token; access token is cached in Redis)
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/AuthTokens'
+        '401':
+          description: Invalid credentials
+  /api/auth/refresh-token:
+    post:
+      tags: [Auth]
+      summary: Refresh access token and rotate refresh token (supports body token or HttpOnly cookie with CSRF header)
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+                      refreshToken:
+                        type: string
+        '403':
+          description: Invalid CSRF token for cookie-based refresh
+        '401':
+          description: Invalid refresh token
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout user by invalidating stored refresh session (supports body token or HttpOnly cookie with CSRF header)
+      responses:
+        '200':
+          description: Logout successful
+        '401':
+          description: Invalid refresh token
+        '403':
+          description: Invalid CSRF token for cookie-based logout
+  /api/auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Send forgot-password OTP to user email
+      responses:
+        '200':
+          description: OTP process accepted
+  /api/auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password using email OTP
+      responses:
+        '200':
+          description: Password reset successful
+  /api/auth/google/register:
+    post:
+      tags: [Auth]
+      summary: Register using Google account (Gmail only)
+      responses:
+        '201':
+          description: Google registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/AuthTokens'
+  /api/auth/google/login:
+    post:
+      tags: [Auth]
+      summary: Login using Google account
+      responses:
+        '200':
+          description: Google login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/AuthTokens'
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      summary: Get current logged-in user information using access token
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/AuthMe'
+        '401':
+          description: Missing or invalid bearer access token
+  /api/auth/policy:
+    get:
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      summary: Get authentication policy for current user
+      responses:
+        '200':
+          description: Authentication policy
+        '401':
+          description: Missing or invalid bearer access token
+    patch:
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      summary: Update authentication policy for current user
+      responses:
+        '200':
+          description: Authentication policy updated
+        '400':
+          description: Invalid auth policy payload
+        '401':
+          description: Missing or invalid bearer access token
+  /api/auth/sessions:
+    get:
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      summary: List active sessions for current user
+      responses:
+        '200':
+          description: Active sessions
+        '401':
+          description: Missing or invalid bearer access token
+  /api/auth/sessions/{sessionId}:
+    delete:
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      summary: Revoke active session by sessionId
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Session revoked
+        '400':
+          description: Invalid session id
+        '401':
+          description: Missing or invalid bearer access token
+        '404':
+          description: Session not found
+  /api/auth/security-logs:
+    get:
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      summary: List security logs for current user
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Security logs
+        '400':
+          description: Invalid security logs query
+        '401':
+          description: Missing or invalid bearer access token
