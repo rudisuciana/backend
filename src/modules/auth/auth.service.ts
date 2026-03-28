@@ -483,7 +483,7 @@ export class AuthService {
     const refreshHash = await bcrypt.hash(refreshToken, 10);
     const refreshPayload = jwt.decode(refreshToken) as jwt.JwtPayload;
     const refreshTokenExpired = refreshPayload.exp
-      ? new Date(refreshPayload.exp * 1000).toISOString()
+      ? new Date(refreshPayload.exp * 1000).toISOString().slice(0, 19).replace('T', ' ')
       : null;
 
     // Use transaction to ensure atomicity between setting refresh token and creating session
