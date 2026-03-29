@@ -1,4 +1,5 @@
 import type { Pool, RowDataPacket } from 'mysql2/promise';
+import type { ResultSetHeader } from 'mysql2';
 import type Redis from 'ioredis';
 
 export interface PPOBProduct {
@@ -108,7 +109,7 @@ export class WebsiteRepository {
   }
 
   async createHistoryOrder(input: HistoryOrderInput): Promise<void> {
-    await this.mysqlPool.query(
+    const [result] = await this.mysqlPool.query<ResultSetHeader>(
       `INSERT INTO histories
          (trx_id, invoice_no, user_id, product_id, product_name, amount, admin_fee, status, description)
        SELECT ?, ?, ?, id, ?, ?, ?, ?, ?
@@ -127,5 +128,9 @@ export class WebsiteRepository {
         input.productCode
       ]
     );
+
+    if (result.affectedRows === 0) {
+      throw new Error('PRODUCT_NOT_FOUND');
+    }
   }
 }

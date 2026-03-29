@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS histories (
   product_id BIGINT UNSIGNED NULL,
   product_name VARCHAR(120) NULL,
   amount DECIMAL(18,2) NULL,
-  admin_fee NUMERIC(18,2) NULL,
+  admin_fee DECIMAL(18,2) NULL,
   status ENUM('pending', 'success', 'failed') NULL,
   description TEXT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
