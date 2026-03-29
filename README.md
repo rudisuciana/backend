@@ -89,6 +89,7 @@ test/
 - `GET /api/auth/sessions` (Bearer access token)
 - `DELETE /api/auth/sessions/:sessionId` (Bearer access token)
 - `GET /api/auth/security-logs` (Bearer access token)
+- `POST /api/website/order` (Bearer access token)
 - `GET /docs`
 
 ## Dokumentasi Terpisah (.md)
@@ -105,7 +106,7 @@ Selain itu, access token hasil login/refresh disimpan sementara di Redis sesuai 
 - Tabel utama blueprint:
   - `users` (dengan kolom `apikey` dan `avatar`)
   - `products`
-  - `histories` (mencakup data transaksi + riwayat aksi)
+  - `histories` (mencakup data transaksi seperti trx_id, invoice_no, product_name, amount, admin_fee, status)
   - `deposits`
   - `settings`
 

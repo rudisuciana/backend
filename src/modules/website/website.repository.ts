@@ -10,6 +10,19 @@ export interface PPOBProduct {
   isActive: boolean;
 }
 
+export interface HistoryOrderInput {
+  trxId: string;
+  invoiceNo: string;
+  userId: number;
+  productCode: string;
+  productName: string;
+  amount: number;
+  adminFee: number;
+  number: string;
+  status: string;
+  description: string;
+}
+
 interface ProductRow extends RowDataPacket {
   id: number;
   code: string;
@@ -18,6 +31,13 @@ interface ProductRow extends RowDataPacket {
   price: number;
   admin_fee: number;
   is_active: number;
+}
+
+interface ProductPriceRow extends RowDataPacket {
+  code: string;
+  name: string;
+  price: number;
+  admin_fee: number;
 }
 
 export class WebsiteRepository {
@@ -69,5 +89,43 @@ export class WebsiteRepository {
       // ignore cache set failures
     }
     return products;
+  }
+
+  async getProductByCode(code: string): Promise<ProductPriceRow | null> {
+    const [rows] = await this.mysqlPool.query<ProductPriceRow[]>(
+      `SELECT code, name, price, admin_fee
+       FROM products
+       WHERE code = ?
+       LIMIT 1`,
+      [code]
+    );
+
+    if (!rows.length) {
+      return null;
+    }
+
+    return rows[0];
+  }
+
+  async createHistoryOrder(input: HistoryOrderInput): Promise<void> {
+    await this.mysqlPool.query(
+      `INSERT INTO histories
+         (trx_id, invoice_no, user_id, product_id, product_name, amount, admin_fee, status, description)
+       SELECT ?, ?, ?, id, ?, ?, ?, ?, ?
+       FROM products
+       WHERE code = ?
+       LIMIT 1`,
+      [
+        input.trxId,
+        input.invoiceNo,
+        input.userId,
+        input.productName,
+        input.amount,
+        input.adminFee,
+        input.status,
+        `${input.description} (${input.number})`,
+        input.productCode
+      ]
+    );
   }
 }

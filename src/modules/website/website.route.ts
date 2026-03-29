@@ -25,6 +25,7 @@ const websiteProductsLimiter = rateLimit({
 
 websiteRouter.get('/ping', websiteController.ping);
 websiteRouter.get('/products', websiteProductsLimiter, requireAccessToken(), websiteController.getProducts);
+websiteRouter.post('/order', websiteProductsLimiter, requireAccessToken(), websiteController.createOrder);
 websiteRouter.get(
   '/akrab-products',
   websiteProductsLimiter,

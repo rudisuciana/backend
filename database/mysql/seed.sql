@@ -34,16 +34,15 @@ ON DUPLICATE KEY UPDATE
   amount = VALUES(amount),
   status = VALUES(status);
 
-INSERT INTO histories (invoice_no, user_id, product_id, amount, admin_fee, total_amount, status, action, description)
+INSERT INTO histories (trx_id, invoice_no, user_id, product_id, product_name, amount, admin_fee, status, description)
 VALUES
-  ('INV-0001', 1, 1, 20500, 2500, 23000, 'success', 'purchase', 'Pembelian token PLN berhasil')
+  ('TRX-0001', 'INV-0001', 1, 1, 'Token PLN 20.000', 20500, 2500, 'success', 'Pembelian token PLN berhasil')
 ON DUPLICATE KEY UPDATE
   product_id = VALUES(product_id),
+  product_name = VALUES(product_name),
   amount = VALUES(amount),
   admin_fee = VALUES(admin_fee),
-  total_amount = VALUES(total_amount),
   status = VALUES(status),
-  action = VALUES(action),
   description = VALUES(description);
 
 INSERT INTO settings (`key`, `value`, description, is_active)
