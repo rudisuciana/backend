@@ -100,7 +100,9 @@ describe('AuthService Gmail restriction', () => {
     expect(tokens.accessToken).toBeTypeOf('string');
     expect(tokens.refreshToken).toBeTypeOf('string');
     expect(authRepository.setRefreshTokenAndCreateSession).toHaveBeenCalledOnce();
-    expect(authRepository.setRefreshTokenAndCreateSession.mock.calls[0][2]).toBeTypeOf('string');
+    const refreshTokenExpired = authRepository.setRefreshTokenAndCreateSession.mock.calls[0][2];
+    expect(refreshTokenExpired).toBeTypeOf('string');
+    expect(refreshTokenExpired).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
     expect(redisClient.set).toHaveBeenCalledOnce();
     expect(redisClient.set.mock.calls[0][0]).toMatch(/^auth:access:9:/);
     expect(redisClient.set.mock.calls[0][2]).toBe('EX');
